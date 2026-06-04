@@ -9,6 +9,9 @@ export const teams = pgTable('teams', {
   color: text('color').notNull(), // 'red', 'blue', etc.
   score: integer('score').default(0),
   captainId: text('captain_id').references(() => users.id),
+  powerCharges: integer('power_charges').default(3),
+  activePower: text('active_power'),
+  activePowerTarget: text('active_power_target'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

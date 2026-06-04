@@ -1,4 +1,8 @@
 import { Events, Message } from 'discord.js';
+import crypto from 'crypto';
+import { db } from '../db';
+import { media } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export const name = Events.MessageCreate;
 export const once = false;
@@ -27,10 +31,11 @@ export async function execute(message: Message, client: any) {
 // Pseudo-pHash Deduplication interface
 export class MediaService {
   static async computePHash(imageUrl: string): Promise<string> {
-    return '1100101010010101'; // MVP dummy hash
+    return crypto.createHash('sha256').update(imageUrl).digest('hex'); // Using sha256 of URL as MVP pHash
   }
 
   static async isDuplicate(phash: string): Promise<boolean> {
-    return false;
+    const existing = await db.select().from(media).where(eq(media.phash, phash)).limit(1);
+    return existing.length > 0;
   }
 }

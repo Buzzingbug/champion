@@ -9,6 +9,7 @@ export const media = pgTable('media', {
   source: text('source').notNull(), // 'manual', 'starter'
   submittedBy: text('submitted_by'),
   contentRating: text('content_rating').default('sfw'),
+  phash: text('phash'),
   timesUsed: integer('times_used').default(0),
   isActive: boolean('is_active').default(true),
   lastUsed: timestamp('last_used'),

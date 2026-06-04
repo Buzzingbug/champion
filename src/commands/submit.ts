@@ -1,4 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { db } from '../db';
+import { media } from '../db/schema';
+import crypto from 'crypto';
 
 export const data = new SlashCommandBuilder()
   .setName('submit')
@@ -18,8 +21,21 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const game = interaction.options.get('game')?.value;
-  const url = interaction.options.get('url')?.value;
-  // TODO: Save to DB media table
+  const game = interaction.options.getString('game', true);
+  const url = interaction.options.getString('url', true);
+  const guildId = interaction.guildId;
+  
+  if (!guildId) return;
+
+  const id = crypto.randomUUID();
+  await db.insert(media).values({
+    id,
+    guildId,
+    url,
+    type: url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image',
+    source: 'manual',
+    submittedBy: interaction.user.id,
+  });
+
   await interaction.reply(`Media submitted to ${game}! You earned +5 points!`);
 }

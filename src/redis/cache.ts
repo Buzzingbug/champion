@@ -14,4 +14,9 @@ export class CacheManager {
     if (keys.length === 0) return [];
     return await redis.mget(keys) as string[];
   }
+
+  static async getVoters(roundId: string): Promise<string[]> {
+    const keys = await redis.keys(`vote:${roundId}:*`);
+    return keys.map((k: string) => k.split(':').pop()!);
+  }
 }

@@ -1,0 +1,1180 @@
+{
+  "nodes": [
+    {
+      "id": "src_bot_start",
+      "label": "start",
+      "file_type": "code",
+      "source_file": "src/bot.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_bot_client",
+      "label": "client",
+      "file_type": "code",
+      "source_file": "src/bot.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_captain_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/captain.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_captain_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/captain.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_index_loadcommands",
+      "label": "loadCommands",
+      "file_type": "code",
+      "source_file": "src/commands/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_index_commandslist",
+      "label": "commandsList",
+      "file_type": "code",
+      "source_file": "src/commands/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_ingest_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/ingest.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_ingest_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/ingest.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_leaderboard_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/leaderboard.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_leaderboard_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/leaderboard.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_ping_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/ping.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_ping_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/ping.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_setup_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/setup.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_setup_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/setup.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_submit_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/submit.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_submit_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/submit.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_team_data",
+      "label": "data",
+      "file_type": "code",
+      "source_file": "src/commands/team.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "commands_team_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/commands/team.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "db_index_db",
+      "label": "db",
+      "file_type": "code",
+      "source_file": "src/db/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_games_games",
+      "label": "games",
+      "file_type": "code",
+      "source_file": "src/db/schema/games.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_games_votes",
+      "label": "votes",
+      "file_type": "code",
+      "source_file": "src/db/schema/games.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_guilds_guilds",
+      "label": "guilds",
+      "file_type": "code",
+      "source_file": "src/db/schema/guilds.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_media_media",
+      "label": "media",
+      "file_type": "code",
+      "source_file": "src/db/schema/media.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_teams_teams",
+      "label": "teams",
+      "file_type": "code",
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_teams_guildmembers",
+      "label": "guildMembers",
+      "file_type": "code",
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "schema_users_users",
+      "label": "users",
+      "file_type": "code",
+      "source_file": "src/db/schema/users.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "events_index_loadevents",
+      "label": "loadEvents",
+      "file_type": "code",
+      "source_file": "src/events/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "events_index_eventslist",
+      "label": "eventsList",
+      "file_type": "code",
+      "source_file": "src/events/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "events_messagereactionadd_execute",
+      "label": "execute",
+      "file_type": "code",
+      "source_file": "src/events/messageReactionAdd.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "redis_cache_cachemanager_setvote",
+      "label": "CacheManager.setVote",
+      "file_type": "code",
+      "source_file": "src/redis/cache.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "redis_cache_cachemanager_getvotes",
+      "label": "CacheManager.getVotes",
+      "file_type": "code",
+      "source_file": "src/redis/cache.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "prediction_index_buildpredictiongame",
+      "label": "buildPredictionGame",
+      "file_type": "code",
+      "source_file": "src/games/prediction/index.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "jobs_queues_schedulepredictionreveal",
+      "label": "schedulePredictionReveal",
+      "file_type": "code",
+      "source_file": "src/jobs/queues.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_server_startserver",
+      "label": "startServer",
+      "file_type": "code",
+      "source_file": "src/server.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "jobs_queues_gamequeue",
+      "label": "gameQueue",
+      "file_type": "code",
+      "source_file": "src/jobs/queues.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "jobs_queues_systemqueue",
+      "label": "systemQueue",
+      "file_type": "code",
+      "source_file": "src/jobs/queues.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "jobs_workers_gameworker",
+      "label": "gameWorker",
+      "file_type": "code",
+      "source_file": "src/jobs/workers.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "jobs_workers_systemworker",
+      "label": "systemWorker",
+      "file_type": "code",
+      "source_file": "src/jobs/workers.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "games_base_game_basegame",
+      "label": "BaseGame",
+      "file_type": "code",
+      "source_file": "src/games/base.game.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "taste_kiss_kick_carry_kisskickcarrygame",
+      "label": "KissKickCarryGame",
+      "file_type": "code",
+      "source_file": "src/games/taste/kiss-kick-carry.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "taste_left_or_right_leftorrightgame",
+      "label": "LeftOrRightGame",
+      "file_type": "code",
+      "source_file": "src/games/taste/left-or-right.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "taste_pick_one_of_four_pickoneoffourgame",
+      "label": "PickOneOfFourGame",
+      "file_type": "code",
+      "source_file": "src/games/taste/pick-one-of-four.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "taste_rate_the_fit_ratethefitgame",
+      "label": "RateTheFitGame",
+      "file_type": "code",
+      "source_file": "src/games/taste/rate-the-fit.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "taste_smash_or_pass_smashorpassgame",
+      "label": "SmashOrPassGame",
+      "file_type": "code",
+      "source_file": "src/games/taste/smash-or-pass.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "events_messagecreate_mediaservice_computephash",
+      "label": "MediaService.computePHash",
+      "file_type": "code",
+      "source_file": "src/events/messageCreate.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "events_messagecreate_mediaservice_isduplicate",
+      "label": "MediaService.isDuplicate",
+      "file_type": "code",
+      "source_file": "src/events/messageCreate.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "services_mediapool_mediapoolrotation",
+      "label": "MediaPoolRotation",
+      "file_type": "code",
+      "source_file": "src/services/mediaPool.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "services_redditscraper_redditscraper",
+      "label": "RedditScraper",
+      "file_type": "code",
+      "source_file": "src/services/redditScraper.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "services_scoring_scoringservice",
+      "label": "ScoringService",
+      "file_type": "code",
+      "source_file": "src/services/scoring.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "services_starterpack_starterpackservice",
+      "label": "StarterPackService",
+      "file_type": "code",
+      "source_file": "src/services/starterPack.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "themes_base_theme_themedefinition",
+      "label": "ThemeDefinition",
+      "file_type": "code",
+      "source_file": "src/themes/base.theme.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_adult_adulttheme",
+      "label": "AdultTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/adult.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_anime_animetheme",
+      "label": "AnimeTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/anime.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_fashion_fashiontheme",
+      "label": "fashionTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/fashion.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_gaming_gamingtheme",
+      "label": "gamingTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/gaming.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_music_musictheme",
+      "label": "MusicTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/music.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "presets_sports_sportstheme",
+      "label": "SportsTheme",
+      "file_type": "code",
+      "source_file": "src/themes/presets/sports.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "themes_registry_theme_registry",
+      "label": "THEME_REGISTRY",
+      "file_type": "code",
+      "source_file": "src/themes/registry.ts",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tsconfig_tsconfig",
+      "label": "tsconfig",
+      "file_type": "document",
+      "source_file": "tsconfig.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rules_graphify_graphify",
+      "label": "graphify rules",
+      "file_type": "document",
+      "source_file": ".agents/rules/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "workflows_graphify_graphify",
+      "label": "graphify workflow",
+      "file_type": "document",
+      "source_file": ".agents/workflows/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "src_bot_start",
+      "target": "commands_index_loadcommands",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/bot.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_bot_start",
+      "target": "events_index_loadevents",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/bot.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_bot_start",
+      "target": "src_bot_client",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/bot.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "commands_leaderboard_execute",
+      "target": "db_index_db",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/leaderboard.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "commands_leaderboard_execute",
+      "target": "schema_teams_guildmembers",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/leaderboard.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "commands_leaderboard_execute",
+      "target": "schema_teams_teams",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/leaderboard.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_games_games",
+      "target": "schema_guilds_guilds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/games.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_games_votes",
+      "target": "schema_games_games",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/games.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_media_media",
+      "target": "schema_guilds_guilds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/media.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_teams_teams",
+      "target": "schema_guilds_guilds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_teams_teams",
+      "target": "schema_users_users",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_teams_guildmembers",
+      "target": "schema_guilds_guilds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_teams_guildmembers",
+      "target": "schema_users_users",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "schema_teams_guildmembers",
+      "target": "schema_teams_teams",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/teams.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "commands_submit_execute",
+      "target": "commands_ingest_execute",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/commands/submit.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "commands_index_loadcommands",
+      "target": "commands_index_commandslist",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/index.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "events_index_loadevents",
+      "target": "events_index_eventslist",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/events/index.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "events_messagereactionadd_execute",
+      "target": "redis_cache_cachemanager_setvote",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/events/messageReactionAdd.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "prediction_index_buildpredictiongame",
+      "target": "jobs_queues_schedulepredictionreveal",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/prediction/index.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_server_startserver",
+      "target": "jobs_queues_gamequeue",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/server.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_server_startserver",
+      "target": "jobs_queues_systemqueue",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/server.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_workers_gameworker",
+      "target": "jobs_queues_gamequeue",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/jobs/workers.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_workers_systemworker",
+      "target": "jobs_queues_systemqueue",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/jobs/workers.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_kiss_kick_carry_kisskickcarrygame",
+      "target": "games_base_game_basegame",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/taste/kiss-kick-carry.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_left_or_right_leftorrightgame",
+      "target": "games_base_game_basegame",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/taste/left-or-right.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_pick_one_of_four_pickoneoffourgame",
+      "target": "games_base_game_basegame",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/taste/pick-one-of-four.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_rate_the_fit_ratethefitgame",
+      "target": "games_base_game_basegame",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/taste/rate-the-fit.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_smash_or_pass_smashorpassgame",
+      "target": "games_base_game_basegame",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/taste/smash-or-pass.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "taste_left_or_right_leftorrightgame",
+      "target": "taste_smash_or_pass_smashorpassgame",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/games/taste/left-or-right.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "events_messagecreate_mediaservice_isduplicate",
+      "target": "events_messagecreate_mediaservice_computephash",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/events/messageCreate.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_starterpack_starterpackservice",
+      "target": "services_redditscraper_redditscraper",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/services/starterPack.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_mediapool_mediapoolrotation",
+      "target": "redis_client_redis",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/mediaPool.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_redditscraper_redditscraper",
+      "target": "jobs_queues_systemqueue",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/redditScraper.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_redditscraper_redditscraper",
+      "target": "db_index_db",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/redditScraper.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_scoring_scoringservice",
+      "target": "db_index_db",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/scoring.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_starterpack_starterpackservice",
+      "target": "db_index_db",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/starterPack.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rules_graphify_graphify",
+      "target": "workflows_graphify_graphify",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".agents/rules/graphify.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_scoring_scoringservice",
+      "target": "db_schema_guildmembers",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/services/scoring.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_redditscraper_redditscraper",
+      "target": "db_schema_media",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/services/redditScraper.ts",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "services_starterpack_starterpackservice",
+      "target": "db_schema_media",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/services/starterPack.ts",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "discord_slash_commands",
+      "label": "Discord Slash Commands",
+      "nodes": [
+        "commands_captain_data",
+        "commands_ingest_data",
+        "commands_leaderboard_data",
+        "commands_ping_data",
+        "commands_setup_data",
+        "commands_submit_data",
+        "commands_team_data"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/index.ts"
+    },
+    {
+      "id": "discord_command_executors",
+      "label": "Discord Command Executors",
+      "nodes": [
+        "commands_captain_execute",
+        "commands_ingest_execute",
+        "commands_leaderboard_execute",
+        "commands_ping_execute",
+        "commands_setup_execute",
+        "commands_submit_execute",
+        "commands_team_execute"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/commands/index.ts"
+    },
+    {
+      "id": "drizzle_schema_tables",
+      "label": "Drizzle Database Schema Tables",
+      "nodes": [
+        "schema_games_games",
+        "schema_games_votes",
+        "schema_guilds_guilds",
+        "schema_media_media",
+        "schema_teams_teams",
+        "schema_teams_guildmembers",
+        "schema_users_users"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/db/schema/index.ts"
+    },
+    {
+      "id": "taste_games_implementations",
+      "label": "Taste Game Implementations",
+      "nodes": [
+        "taste_kiss_kick_carry_kisskickcarrygame",
+        "taste_left_or_right_leftorrightgame",
+        "taste_pick_one_of_four_pickoneoffourgame",
+        "taste_rate_the_fit_ratethefitgame",
+        "taste_smash_or_pass_smashorpassgame",
+        "games_base_game_basegame"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/games/registry.ts"
+    },
+    {
+      "id": "bullmq_queue_system",
+      "label": "BullMQ Job Queue System",
+      "nodes": [
+        "jobs_queues_gamequeue",
+        "jobs_queues_systemqueue",
+        "jobs_workers_gameworker",
+        "jobs_workers_systemworker",
+        "src_server_startserver"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/jobs/index.ts"
+    },
+    {
+      "id": "themes_implement_themedefinition",
+      "label": "Theme Presets Implementation",
+      "nodes": [
+        "presets_adult_adulttheme",
+        "presets_anime_animetheme",
+        "presets_fashion_fashiontheme",
+        "presets_gaming_gamingtheme",
+        "presets_music_musictheme",
+        "presets_sports_sportstheme",
+        "themes_base_theme_themedefinition"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/themes/base.theme.ts"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
