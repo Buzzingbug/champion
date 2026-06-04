@@ -1,4 +1,5 @@
-discord.py==2.3.2
+discord.py
 asyncpg
 redis==5.0.1
 python-dotenv==1.0.0
+audioop-lts
