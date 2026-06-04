@@ -1,7 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import re
+import io
+from PIL import Image
 
 class ROLView(discord.ui.View):
     def __init__(self, db_pool, reward: int, custom_msg: str, role_id: int):
@@ -111,64 +112,100 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
         else:
             await interaction.response.send_message("Successfully reset and disabled **Right or Left** for this server.", ephemeral=True)
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild or not self.bot.db_pool:
+    @app_commands.command(name="submit", description="Submit two images for Right or Left.")
+    @app_commands.describe(
+        image_left="The image that will appear on the left",
+        image_right="The image that will appear on the right",
+        title="Optional title for the post"
+    )
+    async def submit(self, interaction: discord.Interaction, image_left: discord.Attachment, image_right: discord.Attachment, title: str = "Right or Left?"):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
 
         # Fetch config for this guild
         async with self.bot.db_pool.acquire() as connection:
             config = await connection.fetchrow(
                 "SELECT * FROM rol_configs WHERE guild_id = $1",
-                message.guild.id
+                interaction.guild.id
             )
 
         if not config:
+            await interaction.response.send_message("Right or Left has not been configured in this server. An admin needs to run `/rightorleft setup` first.", ephemeral=True)
             return
 
-        # Check if message is in the designated channel
-        if message.channel.id != config['channel_id']:
+        # Check if they are in the configured channel
+        if interaction.channel.id != config['channel_id']:
+            await interaction.response.send_message(f"You can only submit images in <#{config['channel_id']}>.", ephemeral=True)
+            return
+            
+        # Verify attachments are images
+        if not image_left.content_type or not image_left.content_type.startswith('image/') or \
+           not image_right.content_type or not image_right.content_type.startswith('image/'):
+            await interaction.response.send_message("Both attachments must be valid images.", ephemeral=True)
             return
 
-        # Check if the message contains media (attachments or links)
-        has_media = bool(message.attachments) or re.search(r"https?://\S+", message.content)
-        if not has_media:
-            return
-
-        # Prepare to repost
-        files = []
-        for att in message.attachments:
-            files.append(await att.to_file())
-
-        embed = discord.Embed(
-            description=f"**Submitted by {message.author.mention}**\n\n{message.content}",
-            color=discord.Color.blue()
-        )
+        # Defer response since image downloading and processing takes time
+        await interaction.response.defer(ephemeral=True)
         
-        # If there's an image, attach it to the embed for better display
-        image_attached = False
-        for f in files:
-            if f.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                embed.set_image(url=f"attachment://{f.filename}")
-                image_attached = True
-                break
-
-        view = ROLView(
-            db_pool=self.bot.db_pool,
-            reward=config['reward_amount'],
-            custom_msg=config['custom_message'],
-            role_id=config['role_id']
-        )
-
         try:
-            # Delete original message
-            await message.delete()
-            # Repost with embed, files, and buttons
-            await message.channel.send(embed=embed, files=files, view=view)
-        except discord.Forbidden:
-            print("Bot lacks permissions to delete messages or send embeds/attachments in this channel.")
+            # Download images
+            left_bytes = await image_left.read()
+            right_bytes = await image_right.read()
+            
+            # Open with Pillow
+            img1 = Image.open(io.BytesIO(left_bytes)).convert("RGBA")
+            img2 = Image.open(io.BytesIO(right_bytes)).convert("RGBA")
+            
+            # Scale them to the same height (e.g. 500px)
+            target_height = 500
+            
+            aspect1 = img1.width / img1.height
+            img1_resized = img1.resize((int(target_height * aspect1), target_height))
+            
+            aspect2 = img2.width / img2.height
+            img2_resized = img2.resize((int(target_height * aspect2), target_height))
+            
+            # Create a blank image to hold both
+            spacing = 20
+            total_width = img1_resized.width + img2_resized.width + spacing
+            
+            new_img = Image.new("RGBA", (total_width, target_height), (0, 0, 0, 0))
+            new_img.paste(img1_resized, (0, 0))
+            new_img.paste(img2_resized, (img1_resized.width + spacing, 0))
+            
+            # Save stitched image to buffer
+            final_buffer = io.BytesIO()
+            new_img.save(final_buffer, format="PNG")
+            final_buffer.seek(0)
+            
+            file = discord.File(fp=final_buffer, filename="rightorleft.png")
+            
+            # Prepare embed and view
+            embed = discord.Embed(
+                title=title,
+                description=f"**Submitted by {interaction.user.mention}**",
+                color=discord.Color.blue()
+            )
+            embed.set_image(url="attachment://rightorleft.png")
+            
+            view = ROLView(
+                db_pool=self.bot.db_pool,
+                reward=config['reward_amount'],
+                custom_msg=config['custom_message'],
+                role_id=config['role_id']
+            )
+            
+            # Send the result to the channel
+            await interaction.channel.send(embed=embed, file=file, view=view)
+            
+            # Notify user
+            await interaction.followup.send("Successfully submitted!")
+            
         except Exception as e:
-            print(f"Error reposting ROL media: {e}")
+            print(f"Error processing images: {e}")
+            await interaction.followup.send("An error occurred while processing the images. Please ensure they are valid images and try again.")
+
 
 async def setup(bot):
     await bot.add_cog(ROLCog(bot))
