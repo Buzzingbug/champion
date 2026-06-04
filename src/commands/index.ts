@@ -4,8 +4,10 @@ import * as setupCommand from './setup';
 import * as teamCommand from './team';
 
 import * as submitCommand from './submit';
+import * as captainCommand from './captain';
+import * as ingestCommand from './ingest';
 
-const commandsList = [pingCommand, setupCommand, teamCommand, submitCommand];
+const commandsList = [pingCommand, setupCommand, teamCommand, submitCommand, captainCommand, ingestCommand];
 
 export async function loadCommands(client: Client) {
   const commandsData = [];

@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Partials, Collection } from 'discord.js';
 import * as dotenv from 'dotenv';
 import { loadEvents } from './events';
 import { loadCommands } from './commands';
+import './jobs'; // Initialize BullMQ workers
 
 dotenv.config();
 

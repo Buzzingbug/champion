@@ -1,6 +1,7 @@
 import { GameDefinition } from './base.game';
 
 export const GAME_REGISTRY: Record<string, GameDefinition> = {
+  // === TASTE GAMES ===
   'left-or-right': {
     id: 'left-or-right',
     category: 'taste',
@@ -59,5 +60,55 @@ export const GAME_REGISTRY: Record<string, GameDefinition> = {
     voteEmojis: ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'],
     hasCorrectAnswer: false,
     scoring: { participation: 1, accuracyBonus: 3, submitterHigh: 10, submitterMid: 5, submitterLow: 2 }
+  },
+  // === INSTINCT GAMES ===
+  'who-blew-up-first': {
+    id: 'who-blew-up-first',
+    category: 'instinct',
+    name: 'Who Blew Up First?',
+    duration: 30,
+    mediaCount: 2,
+    voteType: 'binary',
+    voteEmojis: ['1️⃣', '2️⃣'],
+    hasCorrectAnswer: true,
+    scoring: { participation: 1, correctAnswer: 5 }
+  },
+  'guess-their-niche': {
+    id: 'guess-their-niche',
+    category: 'instinct',
+    name: 'Guess Their Niche',
+    duration: 30,
+    mediaCount: 1,
+    voteType: 'multi',
+    voteEmojis: ['1️⃣', '2️⃣', '3️⃣', '4️⃣'],
+    hasCorrectAnswer: true,
+    scoring: { participation: 1, correctAnswer: 5 }
+  },
+  // === PREDICTION GAMES ===
+  'next-to-blow-up': {
+    id: 'next-to-blow-up',
+    category: 'prediction',
+    name: 'Next to Blow Up',
+    duration: 30,
+    mediaCount: 2,
+    voteType: 'binary',
+    voteEmojis: ['1️⃣', '2️⃣'],
+    hasCorrectAnswer: true,
+    isDelayed: true,
+    delayDuration: '7d',
+    scoring: { participation: 1, delayedCorrect: 10 }
+  },
+  'future-flex': {
+    id: 'future-flex',
+    category: 'prediction',
+    name: 'Future Flex',
+    duration: 30,
+    mediaCount: 4,
+    voteType: 'multi',
+    voteEmojis: ['1️⃣', '2️⃣', '3️⃣', '4️⃣'],
+    hasCorrectAnswer: true,
+    isDelayed: true,
+    delayDuration: '30d',
+    scoring: { participation: 1, delayedCorrect: 15 }
   }
 };
