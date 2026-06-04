@@ -25,6 +25,12 @@ export const systemWorker = new Worker('system-events', async (job: Job) => {
   if (job.name === 'leaderboard.reset') {
     console.log('Resetting weekly leaderboards...');
     await db.update(guildMembers).set({ score: 0 }); // MVP reset logic
+  } else if (job.name === 'season.rollup') {
+    console.log('Rolling up monthly season...');
+    await db.update(guildMembers).set({ score: 0, streak: 0 }); 
+  } else if (job.name === 'reddit.scrape') {
+    const { RedditScraper } = await import('../services/redditScraper');
+    await RedditScraper.fetchTrending();
   }
 }, { connection: redis as any });
 

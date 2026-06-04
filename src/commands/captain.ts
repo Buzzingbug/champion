@@ -17,7 +17,11 @@ export const data = new SlashCommandBuilder()
             { name: 'Steal (Red)', value: 'steal' },
             { name: 'Double Down (Red)', value: 'double_down' },
             { name: 'Shield (Blue)', value: 'shield' },
-            { name: 'Safe Bet (Blue)', value: 'safe_bet' }
+            { name: 'Safe Bet (Blue)', value: 'safe_bet' },
+            { name: 'Sabotage (Green)', value: 'sabotage' },
+            { name: 'Interest Banking (Gold)', value: 'interest_banking' },
+            { name: 'Mystic Veil (Purple)', value: 'mystic_veil' },
+            { name: 'Poach (Black)', value: 'poach' }
           )
       )
   );
