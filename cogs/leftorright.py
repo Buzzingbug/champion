@@ -4,7 +4,7 @@ from discord.ext import commands
 import io
 from PIL import Image
 
-class ROLView(discord.ui.View):
+class LORView(discord.ui.View):
     def __init__(self, db_pool, reward: int, custom_msg: str, role_id: int):
         super().__init__(timeout=None) # Persists forever
         self.db_pool = db_pool
@@ -49,22 +49,22 @@ class ROLView(discord.ui.View):
         # Send custom success message
         await interaction.response.send_message(self.custom_msg, ephemeral=True)
 
-    @discord.ui.button(label="Right", style=discord.ButtonStyle.primary, emoji="➡️")
-    async def right_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.process_vote(interaction, "right")
-
     @discord.ui.button(label="Left", style=discord.ButtonStyle.danger, emoji="⬅️")
     async def left_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.process_vote(interaction, "left")
 
+    @discord.ui.button(label="Right", style=discord.ButtonStyle.primary, emoji="➡️")
+    async def right_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_vote(interaction, "right")
 
-class ROLCog(commands.GroupCog, group_name="rightorleft"):
+
+class LORCog(commands.GroupCog, group_name="leftorright"):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup", description="Configure the Right or Left feature for this server.")
+    @app_commands.command(name="setup", description="Configure the Left or Right feature for this server.")
     @app_commands.describe(
-        channel="The channel where Right or Left will be active",
+        channel="The channel where Left or Right will be active",
         role="The role required to vote",
         reward="Amount of Supercoins given per vote",
         message="The ephemeral message shown to users after they vote"
@@ -87,14 +87,14 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
             )
             
         await interaction.response.send_message(
-            f"Successfully configured **Right or Left**!\n"
+            f"Successfully configured **Left or Right**!\n"
             f"Channel: {channel.mention}\n"
             f"Required Role: {role.mention}\n"
             f"Reward: **{reward} Supercoins**\n"
             f"Custom Message: `{message}`"
         )
 
-    @app_commands.command(name="reset", description="Reset and disable the Right or Left feature for this server.")
+    @app_commands.command(name="reset", description="Reset and disable the Left or Right feature for this server.")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset(self, interaction: discord.Interaction):
         if not self.bot.db_pool:
@@ -110,15 +110,15 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
         if result == "DELETE 0":
             await interaction.response.send_message("The feature is not currently configured for this server.", ephemeral=True)
         else:
-            await interaction.response.send_message("Successfully reset and disabled **Right or Left** for this server.", ephemeral=True)
+            await interaction.response.send_message("Successfully reset and disabled **Left or Right** for this server.", ephemeral=True)
 
-    @app_commands.command(name="submit", description="Submit two images for Right or Left.")
+    @app_commands.command(name="submit", description="Submit two images for Left or Right.")
     @app_commands.describe(
         image_left="The image that will appear on the left",
         image_right="The image that will appear on the right",
         title="Optional title for the post"
     )
-    async def submit(self, interaction: discord.Interaction, image_left: discord.Attachment, image_right: discord.Attachment, title: str = "Right or Left?"):
+    async def submit(self, interaction: discord.Interaction, image_left: discord.Attachment, image_right: discord.Attachment, title: str = "Left or Right?"):
         if not self.bot.db_pool:
             await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
@@ -131,7 +131,7 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
             )
 
         if not config:
-            await interaction.response.send_message("Right or Left has not been configured in this server. An admin needs to run `/rightorleft setup` first.", ephemeral=True)
+            await interaction.response.send_message("Left or Right has not been configured in this server. An admin needs to run `/leftorright setup` first.", ephemeral=True)
             return
 
         # Check if they are in the configured channel
@@ -179,7 +179,7 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
             new_img.save(final_buffer, format="PNG")
             final_buffer.seek(0)
             
-            file = discord.File(fp=final_buffer, filename="rightorleft.png")
+            file = discord.File(fp=final_buffer, filename="leftorright.png")
             
             # Prepare embed and view
             embed = discord.Embed(
@@ -187,9 +187,9 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
                 description=f"**Submitted by {interaction.user.mention}**",
                 color=discord.Color.blue()
             )
-            embed.set_image(url="attachment://rightorleft.png")
+            embed.set_image(url="attachment://leftorright.png")
             
-            view = ROLView(
+            view = LORView(
                 db_pool=self.bot.db_pool,
                 reward=config['reward_amount'],
                 custom_msg=config['custom_message'],
@@ -208,4 +208,4 @@ class ROLCog(commands.GroupCog, group_name="rightorleft"):
 
 
 async def setup(bot):
-    await bot.add_cog(ROLCog(bot))
+    await bot.add_cog(LORCog(bot))
