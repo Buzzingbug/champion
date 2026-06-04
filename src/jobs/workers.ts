@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { redis } from '../redis/client';
 import { db } from '../db';
-import { games } from '../db/schema';
+import { games, guildMembers } from '../db/schema';
 import { eq } from 'drizzle-orm';
 // We would import the actual game instances/registry here eventually
 // import { GAME_REGISTRY } from '../games/registry';
@@ -24,6 +24,7 @@ export const gameWorker = new Worker('game-events', async (job: Job) => {
 export const systemWorker = new Worker('system-events', async (job: Job) => {
   if (job.name === 'leaderboard.reset') {
     console.log('Resetting weekly leaderboards...');
+    await db.update(guildMembers).set({ score: 0 }); // MVP reset logic
   }
 }, { connection: redis as any });
 

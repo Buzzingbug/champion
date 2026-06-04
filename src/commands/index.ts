@@ -6,8 +6,9 @@ import * as teamCommand from './team';
 import * as submitCommand from './submit';
 import * as captainCommand from './captain';
 import * as ingestCommand from './ingest';
+import * as leaderboardCommand from './leaderboard';
 
-const commandsList = [pingCommand, setupCommand, teamCommand, submitCommand, captainCommand, ingestCommand];
+const commandsList = [pingCommand, setupCommand, teamCommand, submitCommand, captainCommand, ingestCommand, leaderboardCommand];
 
 export async function loadCommands(client: Client) {
   const commandsData = [];

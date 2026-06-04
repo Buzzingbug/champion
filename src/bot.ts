@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import { loadEvents } from './events';
 import { loadCommands } from './commands';
 import './jobs'; // Initialize BullMQ workers
+import { startServer } from './server';
 
 dotenv.config();
 
@@ -22,7 +23,11 @@ async function start() {
   await loadEvents(client);
   
   if (process.env.DISCORD_TOKEN) {
-    await client.login(process.env.DISCORD_TOKEN);
+    // Start Express Server for Dashboard/Healthchecks
+    startServer();
+
+    // Login to Discord
+    client.login(process.env.DISCORD_TOKEN);
   } else {
     console.warn('DISCORD_TOKEN is missing. Bot cannot log in.');
   }
