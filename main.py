@@ -37,6 +37,21 @@ class GamesBot(commands.Bot):
                     PRIMARY KEY (message_id, user_id)
                 );
                 
+                CREATE TABLE IF NOT EXISTS kfm_configs (
+                    guild_id BIGINT PRIMARY KEY,
+                    channel_id BIGINT,
+                    role_id BIGINT,
+                    reward_amount INT,
+                    custom_message TEXT
+                );
+                
+                CREATE TABLE IF NOT EXISTS kfm_votes (
+                    message_id BIGINT,
+                    user_id BIGINT,
+                    vote_choice VARCHAR(10),
+                    PRIMARY KEY (message_id, user_id)
+                );
+                
                 CREATE TABLE IF NOT EXISTS economy (
                     guild_id BIGINT,
                     user_id BIGINT,
