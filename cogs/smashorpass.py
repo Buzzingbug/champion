@@ -93,6 +93,24 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
             f"Custom Message: `{message}`"
         )
 
+    @app_commands.command(name="reset", description="Reset and disable the Smash or Pass feature for this server.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reset(self, interaction: discord.Interaction):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as connection:
+            result = await connection.execute(
+                "DELETE FROM server_configs WHERE guild_id = $1",
+                interaction.guild.id
+            )
+            
+        if result == "DELETE 0":
+            await interaction.response.send_message("The feature is not currently configured for this server.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Successfully reset and disabled **Smash or Pass** for this server.", ephemeral=True)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild or not self.bot.db_pool:
