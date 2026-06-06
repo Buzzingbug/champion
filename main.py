@@ -67,6 +67,18 @@ class GamesBot(commands.Bot):
                     PRIMARY KEY (message_id, user_id)
                 );
                 
+                CREATE TABLE IF NOT EXISTS puzzle_configs (
+                    guild_id BIGINT PRIMARY KEY,
+                    channel_id BIGINT,
+                    reward_amount INT
+                );
+
+                CREATE TABLE IF NOT EXISTS active_puzzles (
+                    message_id BIGINT PRIMARY KEY,
+                    guild_id BIGINT,
+                    correct_order VARCHAR(20)
+                );
+
                 CREATE TABLE IF NOT EXISTS economy (
                     guild_id BIGINT,
                     user_id BIGINT,
