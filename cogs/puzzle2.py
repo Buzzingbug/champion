@@ -6,7 +6,7 @@ import random
 from PIL import Image, ImageDraw
 
 class SlidingPuzzleView(discord.ui.View):
-    def __init__(self, db_pool, puzzle_message_id: int, original_author_id: int, original_msg_jump_url: str, pieces: list, board: list, empty_idx: int, reward: int):
+    def __init__(self, db_pool, puzzle_message_id: int, original_author_id: int, original_msg_jump_url: str, pieces: list, board: list, empty_idx: int, reward: int, guild_id: int, channel_id: int):
         super().__init__(timeout=900) # 15 minutes timeout
         self.db_pool = db_pool
         self.puzzle_message_id = puzzle_message_id
@@ -16,6 +16,8 @@ class SlidingPuzzleView(discord.ui.View):
         self.board = board
         self.empty_idx = empty_idx
         self.reward = reward
+        self.guild_id = guild_id
+        self.channel_id = channel_id
 
     def generate_image(self):
         # Create a new blank 600x600 image
@@ -70,7 +72,7 @@ class SlidingPuzzleView(discord.ui.View):
                     ON CONFLICT (guild_id, user_id) 
                     DO UPDATE SET supercoins = economy.supercoins + $3
                     """,
-                    interaction.guild.id, interaction.user.id, self.reward
+                    self.guild_id, interaction.user.id, self.reward
                 )
                 
                 # Delete active puzzle
@@ -81,7 +83,10 @@ class SlidingPuzzleView(discord.ui.View):
                 
             # Edit original message
             try:
-                channel = interaction.guild.get_channel(interaction.channel_id)
+                bot = interaction.client
+                channel = bot.get_channel(self.channel_id)
+                if not channel:
+                    channel = await bot.fetch_channel(self.channel_id)
                 msg = await channel.fetch_message(self.puzzle_message_id)
                 embed = msg.embeds[0]
                 embed.color = discord.Color.green()
@@ -189,17 +194,22 @@ class StartPuzzleView(discord.ui.View):
             pieces=pieces,
             board=board,
             empty_idx=empty_idx,
-            reward=reward
+            reward=reward,
+            guild_id=interaction.guild.id,
+            channel_id=interaction.channel.id
         )
         
         file = view.generate_image()
         
-        await interaction.followup.send(
-            content="**Sliding Puzzle**\nUse the arrows to slide the pieces into the empty black space. Put them back into the original picture to win!",
-            file=file,
-            view=view,
-            ephemeral=True
-        )
+        try:
+            await interaction.user.send(
+                content="**Sliding Puzzle**\nUse the arrows to slide the pieces into the empty black space. Put them back into the original picture to win!",
+                file=file,
+                view=view
+            )
+            await interaction.followup.send("I've sent the puzzle to your DMs! Check your messages to play.", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.followup.send("I couldn't send you a DM. Please check your privacy settings to ensure you accept DMs from server members!", ephemeral=True)
 
 class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
     def __init__(self, bot):
