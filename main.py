@@ -79,6 +79,18 @@ class GamesBot(commands.Bot):
                     correct_order VARCHAR(20)
                 );
 
+                CREATE TABLE IF NOT EXISTS puzzle2_configs (
+                    guild_id BIGINT PRIMARY KEY,
+                    channel_id BIGINT,
+                    reward_amount INT
+                );
+
+                CREATE TABLE IF NOT EXISTS puzzle2_active (
+                    message_id BIGINT PRIMARY KEY,
+                    guild_id BIGINT,
+                    image_data BYTEA
+                );
+
                 CREATE TABLE IF NOT EXISTS economy (
                     guild_id BIGINT,
                     user_id BIGINT,
