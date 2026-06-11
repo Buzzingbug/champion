@@ -91,6 +91,8 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
                 interaction.guild.id, channel.id, role.id, reward, message
             )
             
+        self.bot.cache['kfm'][interaction.guild.id] = channel.id
+            
         await interaction.response.send_message(
             f"Successfully configured **Kiss, Fuck, Marry**!\n"
             f"Channel: {channel.mention}\n"
@@ -112,6 +114,9 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
                 interaction.guild.id
             )
             
+        if interaction.guild.id in self.bot.cache['kfm']:
+            del self.bot.cache['kfm'][interaction.guild.id]
+            
         if result == "DELETE 0":
             await interaction.response.send_message("The feature is not currently configured for this server.", ephemeral=True)
         else:
@@ -122,7 +127,12 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
         if message.author.bot or not message.guild or not self.bot.db_pool:
             return
 
-        # Fetch config for this guild
+        # Cache check: O(1) latency
+        kfm_channel_id = self.bot.cache['kfm'].get(message.guild.id)
+        if not kfm_channel_id or message.channel.id != kfm_channel_id:
+            return
+
+        # Fetch config from DB since we are actually in the game channel
         async with self.bot.db_pool.acquire() as connection:
             config = await connection.fetchrow(
                 "SELECT * FROM kfm_configs WHERE guild_id = $1",
@@ -130,10 +140,6 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
             )
 
         if not config:
-            return
-
-        # Check if message is in the designated channel
-        if message.channel.id != config['channel_id']:
             return
 
         # Check if the message contains media (attachments or links)

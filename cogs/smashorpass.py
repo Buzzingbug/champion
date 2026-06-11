@@ -87,6 +87,8 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
                 interaction.guild.id, channel.id, role.id, reward, message
             )
             
+        self.bot.cache['smash'][interaction.guild.id] = channel.id
+            
         await interaction.response.send_message(
             f"Successfully configured **Smash or Pass**!\n"
             f"Channel: {channel.mention}\n"
@@ -108,6 +110,9 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
                 interaction.guild.id
             )
             
+        if interaction.guild.id in self.bot.cache['smash']:
+            del self.bot.cache['smash'][interaction.guild.id]
+            
         if result == "DELETE 0":
             await interaction.response.send_message("The feature is not currently configured for this server.", ephemeral=True)
         else:
@@ -118,7 +123,12 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
         if message.author.bot or not message.guild or not self.bot.db_pool:
             return
 
-        # Fetch config for this guild
+        # Cache check: O(1) latency
+        smash_channel_id = self.bot.cache['smash'].get(message.guild.id)
+        if not smash_channel_id or message.channel.id != smash_channel_id:
+            return
+
+        # Fetch config from DB since we are actually in the game channel
         async with self.bot.db_pool.acquire() as connection:
             config = await connection.fetchrow(
                 "SELECT * FROM server_configs WHERE guild_id = $1",
@@ -126,10 +136,6 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
             )
 
         if not config:
-            return
-
-        # Check if message is in the designated channel
-        if message.channel.id != config['smash_channel_id']:
             return
 
         # Check if the message contains media (attachments or links)

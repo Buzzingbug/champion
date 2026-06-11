@@ -17,6 +17,14 @@ class GamesBot(commands.Bot):
         self.db_pool = None
         self.redis_pool = None
 
+        # High-Performance Memory Cache
+        self.cache = {
+            'gates': {},  # channel_id -> dict
+            'smash': {},  # guild_id -> channel_id
+            'kfm': {},    # guild_id -> channel_id
+            'lor': {}     # guild_id -> channel_id
+        }
+
     async def create_db_tables(self):
         if not self.db_pool:
             return
@@ -113,6 +121,29 @@ class GamesBot(commands.Bot):
             """)
             print("Database tables verified/created.")
 
+    async def load_caches(self):
+        if not self.db_pool:
+            return
+            
+        async with self.db_pool.acquire() as connection:
+            # Load Gates
+            gates = await connection.fetch("SELECT * FROM coin_gates")
+            self.cache['gates'] = {g['channel_id']: dict(g) for g in gates}
+            
+            # Load Smash
+            smash = await connection.fetch("SELECT guild_id, smash_channel_id FROM server_configs")
+            self.cache['smash'] = {s['guild_id']: s['smash_channel_id'] for s in smash}
+            
+            # Load KFM
+            kfm = await connection.fetch("SELECT guild_id, channel_id FROM kfm_configs")
+            self.cache['kfm'] = {k['guild_id']: k['channel_id'] for k in kfm}
+
+            # Load LOR
+            lor = await connection.fetch("SELECT guild_id, channel_id FROM rol_configs")
+            self.cache['lor'] = {l['guild_id']: l['channel_id'] for l in lor}
+            
+        print(f"Caches loaded: {len(self.cache['gates'])} gates, {len(self.cache['smash'])} smash configs, {len(self.cache['kfm'])} kfm configs.")
+
     async def setup_hook(self):
         # Database setup
         database_url = os.getenv("DATABASE_URL")
@@ -121,6 +152,7 @@ class GamesBot(commands.Bot):
                 self.db_pool = await asyncpg.create_pool(database_url)
                 print("Connected to PostgreSQL")
                 await self.create_db_tables()
+                await self.load_caches()
             except Exception as e:
                 print(f"Failed to connect to PostgreSQL: {e}")
         else:

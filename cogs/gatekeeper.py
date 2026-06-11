@@ -35,6 +35,15 @@ class GatekeeperCog(commands.GroupCog, group_name="gate"):
             coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
             coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             
+        # Update Cache
+        self.bot.cache['gates'][channel.id] = {
+            'channel_id': channel.id,
+            'guild_id': interaction.guild.id,
+            'bypass_role_id': bypass_role_id,
+            'required_amount': amount,
+            'custom_message': message
+        }
+            
         role_text = f"\nBypass Role: {bypass_role.mention}" if bypass_role else ""
         
         await interaction.response.send_message(
@@ -57,6 +66,9 @@ class GatekeeperCog(commands.GroupCog, group_name="gate"):
                 channel.id
             )
             
+        if channel.id in self.bot.cache['gates']:
+            del self.bot.cache['gates'][channel.id]
+            
         if result == "DELETE 0":
             await interaction.response.send_message(f"{channel.mention} is not currently restricted.", ephemeral=True)
         else:
@@ -67,26 +79,18 @@ class GatekeeperCog(commands.GroupCog, group_name="gate"):
         if message.author.bot or not message.guild or not self.bot.db_pool:
             return
 
-        # Short-circuit check to see if this channel is gated
-        # To avoid querying DB on EVERY single message globally, we should ideally cache this.
-        # But for now, we'll do a quick fetch. Asyncpg is very fast.
+        gate = self.bot.cache['gates'].get(message.channel.id)
+        if not gate:
+            return
+
+        # If user has the bypass role, let them speak
+        if gate.get('bypass_role_id'):
+            if isinstance(message.author, discord.Member):
+                if gate['bypass_role_id'] in [r.id for r in message.author.roles]:
+                    return
+
+        # Check their balance
         async with self.bot.db_pool.acquire() as connection:
-            gate = await connection.fetchrow(
-                "SELECT bypass_role_id, required_amount, custom_message FROM coin_gates WHERE channel_id = $1",
-                message.channel.id
-            )
-
-            if not gate:
-                return
-
-            # If user has the bypass role, let them speak
-            if gate['bypass_role_id']:
-                # Ensure the user object has roles (sometimes message.author is a User not Member, though rare in guilds)
-                if isinstance(message.author, discord.Member):
-                    if gate['bypass_role_id'] in [r.id for r in message.author.roles]:
-                        return
-
-            # Check their balance
             economy_record = await connection.fetchrow(
                 "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
                 message.guild.id, message.author.id
