@@ -44,6 +44,37 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             print(f"Error sending bank embed: {e}")
             await interaction.followup.send(f"Bank error: Your balance is **{balance:,} {coin_name}**.")
 
+    @app_commands.command(name="add", description="Add coins to a user's bank account.")
+    @app_commands.describe(user="The user to give coins to", amount="The amount of coins to give")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def add(self, interaction: discord.Interaction, user: discord.Member, amount: int):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
+            return
+
+        if amount <= 0:
+            await interaction.response.send_message("Amount must be greater than zero.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as connection:
+            await connection.execute(
+                """
+                INSERT INTO economy (guild_id, user_id, supercoins) 
+                VALUES ($1, $2, $3)
+                ON CONFLICT (guild_id, user_id) 
+                DO UPDATE SET supercoins = economy.supercoins + $3
+                """,
+                interaction.guild.id, user.id, amount
+            )
+
+            coin_record = await connection.fetchrow(
+                "SELECT coin_name FROM server_settings WHERE guild_id = $1", 
+                interaction.guild.id
+            )
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
+
+        await interaction.response.send_message(f"Successfully added **{amount:,} {coin_name}** to {user.mention}'s account!")
+
     @app_commands.command(name="setname", description="Set the custom name for your server's currency.")
     @app_commands.describe(name="The new name for the currency (e.g., VibeCoins)")
     @app_commands.checks.has_permissions(administrator=True)
