@@ -91,6 +91,14 @@ class GamesBot(commands.Bot):
                     image_data BYTEA
                 );
 
+                CREATE TABLE IF NOT EXISTS coin_gates (
+                    channel_id BIGINT PRIMARY KEY,
+                    guild_id BIGINT,
+                    bypass_role_id BIGINT,
+                    required_amount INT,
+                    custom_message TEXT
+                );
+
                 CREATE TABLE IF NOT EXISTS server_settings (
                     guild_id BIGINT PRIMARY KEY,
                     coin_name VARCHAR(50) DEFAULT 'Supercoins'
