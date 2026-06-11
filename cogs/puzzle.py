@@ -44,6 +44,9 @@ class PuzzleModal(discord.ui.Modal, title='Solve Puzzle'):
                     record['guild_id']
                 )
                 reward = config['reward_amount'] if config else 100
+                
+                coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", record['guild_id'])
+                coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
 
                 # Award coins
                 await connection.execute(
@@ -62,7 +65,7 @@ class PuzzleModal(discord.ui.Modal, title='Solve Puzzle'):
                     self.message_id
                 )
 
-                await interaction.response.send_message(f"🎉 **Correct!** You've solved the puzzle and earned **{reward} Supercoins**!")
+                await interaction.response.send_message(f"🎉 **Correct!** You've solved the puzzle and earned **{reward} {coin_name}**!")
                 
                 # Update original message
                 try:
@@ -102,6 +105,8 @@ class PuzzleCog(commands.GroupCog, group_name="puzzle"):
             return
 
         async with self.bot.db_pool.acquire() as connection:
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             await connection.execute(
                 """
                 INSERT INTO puzzle_configs (guild_id, channel_id, reward_amount)
@@ -115,7 +120,7 @@ class PuzzleCog(commands.GroupCog, group_name="puzzle"):
         await interaction.response.send_message(
             f"Successfully configured **Jigsaw Puzzles**!\n"
             f"Channel: {channel.mention}\n"
-            f"Reward: **{reward} Supercoins**"
+            f"Reward: **{reward} {coin_name}**"
         )
 
     @app_commands.command(name="submit", description="Submit an image to be scrambled into a puzzle.")
@@ -134,6 +139,8 @@ class PuzzleCog(commands.GroupCog, group_name="puzzle"):
                 "SELECT * FROM puzzle_configs WHERE guild_id = $1",
                 interaction.guild.id
             )
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
 
         if not config:
             await interaction.response.send_message("Puzzles are not configured here. Admin needs to run `/puzzle setup`.", ephemeral=True)
@@ -221,7 +228,7 @@ class PuzzleCog(commands.GroupCog, group_name="puzzle"):
             
             embed = discord.Embed(
                 title=title,
-                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to solve! You need to enter the 9 numbers in the correct order to win **{config['reward_amount']} Supercoins**.",
+                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to solve! You need to enter the 9 numbers in the correct order to win **{config['reward_amount']} {coin_name}**.",
                 color=discord.Color.gold()
             )
             embed.set_image(url="attachment://scrambled.png")

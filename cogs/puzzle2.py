@@ -6,7 +6,7 @@ import random
 from PIL import Image, ImageDraw
 
 class SlidingPuzzleView(discord.ui.View):
-    def __init__(self, db_pool, puzzle_message_id: int, original_author_id: int, original_msg_jump_url: str, pieces: list, board: list, empty_idx: int, reward: int, guild_id: int, channel_id: int):
+    def __init__(self, db_pool, puzzle_message_id: int, original_author_id: int, original_msg_jump_url: str, pieces: list, board: list, empty_idx: int, reward: int, guild_id: int, channel_id: int, coin_name: str):
         super().__init__(timeout=900) # 15 minutes timeout
         self.db_pool = db_pool
         self.puzzle_message_id = puzzle_message_id
@@ -18,6 +18,7 @@ class SlidingPuzzleView(discord.ui.View):
         self.reward = reward
         self.guild_id = guild_id
         self.channel_id = channel_id
+        self.coin_name = coin_name
 
     def generate_image(self):
         # Create a new blank 600x600 image
@@ -90,14 +91,14 @@ class SlidingPuzzleView(discord.ui.View):
                 msg = await channel.fetch_message(self.puzzle_message_id)
                 embed = msg.embeds[0]
                 embed.color = discord.Color.green()
-                embed.description = f"**Solved by {interaction.user.mention}!**\nThey earned **{self.reward} Supercoins**."
+                embed.description = f"**Solved by {interaction.user.mention}!**\nThey earned **{self.reward} {self.coin_name}**."
                 await msg.edit(embed=embed, view=None)
             except Exception as e:
                 print(f"Failed to edit original msg: {e}")
                 
             final_file = self.generate_image()
             await interaction.response.edit_message(
-                content=f"🎉 **Congratulations!** You solved the puzzle and earned {self.reward} Supercoins!\n[View Original Message]({self.original_msg_jump_url})",
+                content=f"🎉 **Congratulations!** You solved the puzzle and earned {self.reward} {self.coin_name}!\n[View Original Message]({self.original_msg_jump_url})",
                 attachments=[final_file],
                 view=self
             )
@@ -159,6 +160,9 @@ class StartPuzzleView(discord.ui.View):
                 interaction.guild.id
             )
             reward = config['reward_amount'] if config else 100
+            
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
 
         image_data = record['image_data']
         img = Image.open(io.BytesIO(image_data))
@@ -196,7 +200,8 @@ class StartPuzzleView(discord.ui.View):
             empty_idx=empty_idx,
             reward=reward,
             guild_id=interaction.guild.id,
-            channel_id=interaction.channel.id
+            channel_id=interaction.channel.id,
+            coin_name=coin_name
         )
         
         file = view.generate_image()
@@ -227,6 +232,8 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
             return
 
         async with self.bot.db_pool.acquire() as connection:
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             await connection.execute(
                 """
                 INSERT INTO puzzle2_configs (guild_id, channel_id, reward_amount)
@@ -238,7 +245,7 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
             )
             
         await interaction.response.send_message(
-            f"Successfully configured **Sliding Puzzles**!\nChannel: {channel.mention}\nReward: **{reward} Supercoins**"
+            f"Successfully configured **Sliding Puzzles**!\nChannel: {channel.mention}\nReward: **{reward} {coin_name}**"
         )
 
     @app_commands.command(name="submit", description="Submit an image to become a sliding puzzle.")
@@ -253,6 +260,8 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
                 "SELECT * FROM puzzle2_configs WHERE guild_id = $1",
                 interaction.guild.id
             )
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
 
         if not config:
             await interaction.response.send_message("Sliding puzzles are not configured here.", ephemeral=True)
@@ -293,7 +302,7 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
             
             embed = discord.Embed(
                 title="🧩 Sliding Puzzle",
-                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to play privately! Slide the pieces to recreate this original image and earn **{config['reward_amount']} Supercoins**.",
+                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to play privately! Slide the pieces to recreate this original image and earn **{config['reward_amount']} {coin_name}**.",
                 color=discord.Color.purple()
             )
             embed.set_image(url="attachment://puzzle_full.jpg")

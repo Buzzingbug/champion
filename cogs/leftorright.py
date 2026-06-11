@@ -76,6 +76,8 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             return
 
         async with self.bot.db_pool.acquire() as connection:
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             await connection.execute(
                 """
                 INSERT INTO rol_configs (guild_id, channel_id, role_id, reward_amount, custom_message)
@@ -90,7 +92,7 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             f"Successfully configured **Left or Right**!\n"
             f"Channel: {channel.mention}\n"
             f"Required Role: {role.mention}\n"
-            f"Reward: **{reward} Supercoins**\n"
+            f"Reward: **{reward} {coin_name}**\n"
             f"Custom Message: `{message}`"
         )
 
