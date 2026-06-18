@@ -22,7 +22,8 @@ class GamesBot(commands.Bot):
             'gates': {},  # channel_id -> dict
             'smash': {},  # guild_id -> channel_id
             'kfm': {},    # guild_id -> channel_id
-            'lor': {}     # guild_id -> channel_id
+            'lor': {},    # guild_id -> channel_id
+            'categories': {} # category_id -> dict
         }
 
     async def create_db_tables(self):
@@ -118,6 +119,22 @@ class GamesBot(commands.Bot):
                     supercoins BIGINT DEFAULT 0,
                     PRIMARY KEY (guild_id, user_id)
                 );
+
+                CREATE TABLE IF NOT EXISTS category_configs (
+                    category_id BIGINT PRIMARY KEY,
+                    guild_id BIGINT,
+                    reward_amount INT,
+                    daily_limit INT,
+                    custom_message TEXT
+                );
+                
+                CREATE TABLE IF NOT EXISTS category_earnings (
+                    user_id BIGINT,
+                    category_id BIGINT,
+                    date DATE,
+                    earned_today INT,
+                    PRIMARY KEY (user_id, category_id, date)
+                );
             """)
             print("Database tables verified/created.")
 
@@ -141,8 +158,12 @@ class GamesBot(commands.Bot):
             # Load LOR
             lor = await connection.fetch("SELECT guild_id, channel_id FROM rol_configs")
             self.cache['lor'] = {l['guild_id']: l['channel_id'] for l in lor}
+
+            # Load Categories
+            categories = await connection.fetch("SELECT * FROM category_configs")
+            self.cache['categories'] = {c['category_id']: dict(c) for c in categories}
             
-        print(f"Caches loaded: {len(self.cache['gates'])} gates, {len(self.cache['smash'])} smash configs, {len(self.cache['kfm'])} kfm configs.")
+        print(f"Caches loaded: {len(self.cache['gates'])} gates, {len(self.cache['smash'])} smash configs, {len(self.cache['kfm'])} kfm configs, {len(self.cache['categories'])} categories.")
 
     async def setup_hook(self):
         # Database setup
