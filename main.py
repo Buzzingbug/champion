@@ -23,7 +23,8 @@ class GamesBot(commands.Bot):
             'smash': {},  # guild_id -> channel_id
             'kfm': {},    # guild_id -> channel_id
             'lor': {},    # guild_id -> channel_id
-            'categories': {} # category_id -> dict
+            'categories': {}, # category_id -> dict
+            'channel_rewards': {} # channel_id -> dict
         }
 
     async def create_db_tables(self):
@@ -135,6 +136,22 @@ class GamesBot(commands.Bot):
                     earned_today INT,
                     PRIMARY KEY (user_id, category_id, date)
                 );
+
+                CREATE TABLE IF NOT EXISTS channel_reward_configs (
+                    channel_id BIGINT PRIMARY KEY,
+                    guild_id BIGINT,
+                    reward_amount INT,
+                    daily_limit INT,
+                    custom_message TEXT
+                );
+                
+                CREATE TABLE IF NOT EXISTS channel_earnings (
+                    user_id BIGINT,
+                    channel_id BIGINT,
+                    date DATE,
+                    earned_today INT,
+                    PRIMARY KEY (user_id, channel_id, date)
+                );
             """)
             print("Database tables verified/created.")
 
@@ -162,8 +179,12 @@ class GamesBot(commands.Bot):
             # Load Categories
             categories = await connection.fetch("SELECT * FROM category_configs")
             self.cache['categories'] = {c['category_id']: dict(c) for c in categories}
+
+            # Load Channel Rewards
+            channel_rewards = await connection.fetch("SELECT * FROM channel_reward_configs")
+            self.cache['channel_rewards'] = {c['channel_id']: dict(c) for c in channel_rewards}
             
-        print(f"Caches loaded: {len(self.cache['gates'])} gates, {len(self.cache['smash'])} smash configs, {len(self.cache['kfm'])} kfm configs, {len(self.cache['categories'])} categories.")
+        print(f"Caches loaded: {len(self.cache['gates'])} gates, {len(self.cache['categories'])} categories, {len(self.cache['channel_rewards'])} channel rewards.")
 
     async def setup_hook(self):
         # Database setup
