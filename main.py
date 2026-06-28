@@ -37,7 +37,8 @@ class GamesBot(commands.Bot):
                     smash_channel_id BIGINT,
                     smash_role_id BIGINT,
                     smash_reward_amount INT,
-                    smash_custom_message TEXT
+                    smash_custom_message TEXT,
+                    post_cost INT DEFAULT 0
                 );
                 
                 CREATE TABLE IF NOT EXISTS smash_votes (
@@ -52,7 +53,8 @@ class GamesBot(commands.Bot):
                     channel_id BIGINT,
                     role_id BIGINT,
                     reward_amount INT,
-                    custom_message TEXT
+                    custom_message TEXT,
+                    post_cost INT DEFAULT 0
                 );
                 
                 CREATE TABLE IF NOT EXISTS kfm_votes (
@@ -67,7 +69,8 @@ class GamesBot(commands.Bot):
                     channel_id BIGINT,
                     role_id BIGINT,
                     reward_amount INT,
-                    custom_message TEXT
+                    custom_message TEXT,
+                    post_cost INT DEFAULT 0
                 );
                 
                 CREATE TABLE IF NOT EXISTS rol_votes (
@@ -152,6 +155,18 @@ class GamesBot(commands.Bot):
                     earned_today INT,
                     PRIMARY KEY (user_id, channel_id, date)
                 );
+
+                CREATE TABLE IF NOT EXISTS weekly_dashboards (
+                    guild_id BIGINT PRIMARY KEY,
+                    channel_id BIGINT,
+                    smash_msg TEXT,
+                    smash_prize INT,
+                    kfm_msg TEXT,
+                    kfm_prize INT,
+                    rol_msg TEXT,
+                    rol_prize INT,
+                    last_posted DATE
+                );
             """)
             print("Database tables verified/created.")
 
@@ -165,16 +180,16 @@ class GamesBot(commands.Bot):
             self.cache['gates'] = {g['channel_id']: dict(g) for g in gates}
             
             # Load Smash
-            smash = await connection.fetch("SELECT guild_id, smash_channel_id FROM server_configs")
-            self.cache['smash'] = {s['guild_id']: s['smash_channel_id'] for s in smash}
+            smash = await connection.fetch("SELECT * FROM server_configs")
+            self.cache['smash'] = {s['guild_id']: dict(s) for s in smash}
             
             # Load KFM
-            kfm = await connection.fetch("SELECT guild_id, channel_id FROM kfm_configs")
-            self.cache['kfm'] = {k['guild_id']: k['channel_id'] for k in kfm}
+            kfm = await connection.fetch("SELECT * FROM kfm_configs")
+            self.cache['kfm'] = {k['guild_id']: dict(k) for k in kfm}
 
             # Load LOR
-            lor = await connection.fetch("SELECT guild_id, channel_id FROM rol_configs")
-            self.cache['lor'] = {l['guild_id']: l['channel_id'] for l in lor}
+            lor = await connection.fetch("SELECT * FROM rol_configs")
+            self.cache['lor'] = {l['guild_id']: dict(l) for l in lor}
 
             # Load Categories
             categories = await connection.fetch("SELECT * FROM category_configs")

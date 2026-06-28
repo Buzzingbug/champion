@@ -67,10 +67,11 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
         channel="The channel where Left or Right will be active",
         role="The role required to vote",
         reward="Amount of Supercoins given per vote",
-        message="The ephemeral message shown to users after they vote"
+        message="The ephemeral message shown to users after they vote",
+        post_cost="Amount of Supercoins it costs to post images (default 0)"
     )
     @app_commands.checks.has_permissions(administrator=True)
-    async def setup(self, interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role, reward: int, message: str):
+    async def setup(self, interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role, reward: int, message: str, post_cost: int = 0):
         if not self.bot.db_pool:
             await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
@@ -80,13 +81,22 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             await connection.execute(
                 """
-                INSERT INTO rol_configs (guild_id, channel_id, role_id, reward_amount, custom_message)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO rol_configs (guild_id, channel_id, role_id, reward_amount, custom_message, post_cost)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (guild_id) DO UPDATE 
-                SET channel_id = $2, role_id = $3, reward_amount = $4, custom_message = $5
+                SET channel_id = $2, role_id = $3, reward_amount = $4, custom_message = $5, post_cost = $6
                 """,
-                interaction.guild.id, channel.id, role.id, reward, message
+                interaction.guild.id, channel.id, role.id, reward, message, post_cost
             )
+            
+        self.bot.cache['lor'][interaction.guild.id] = {
+            'guild_id': interaction.guild.id,
+            'channel_id': channel.id,
+            'role_id': role.id,
+            'reward_amount': reward,
+            'custom_message': message,
+            'post_cost': post_cost
+        }
             
         await interaction.response.send_message(
             f"Successfully configured **Left or Right**!\n"
@@ -125,12 +135,8 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
 
-        # Fetch config for this guild
-        async with self.bot.db_pool.acquire() as connection:
-            config = await connection.fetchrow(
-                "SELECT * FROM rol_configs WHERE guild_id = $1",
-                interaction.guild.id
-            )
+        # Fetch config for this guild from cache
+        config = self.bot.cache['lor'].get(interaction.guild.id)
 
         if not config:
             await interaction.response.send_message("Left or Right has not been configured in this server. An admin needs to run `/leftorright setup` first.", ephemeral=True)
@@ -140,12 +146,29 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
         if interaction.channel.id != config['channel_id']:
             await interaction.response.send_message(f"You can only submit images in <#{config['channel_id']}>.", ephemeral=True)
             return
-            
+
         # Verify attachments are images
         if not image_left.content_type or not image_left.content_type.startswith('image/') or \
            not image_right.content_type or not image_right.content_type.startswith('image/'):
             await interaction.response.send_message("Both attachments must be valid images.", ephemeral=True)
             return
+
+        # Check economy and deduct post cost BEFORE downloading images
+        async with self.bot.db_pool.acquire() as connection:
+            if config.get('post_cost', 0) > 0:
+                user_bal = await connection.fetchrow(
+                    "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
+                    interaction.guild.id, interaction.user.id
+                )
+                if not user_bal or user_bal['supercoins'] < config['post_cost']:
+                    await interaction.response.send_message(f"You don't have enough coins to submit! It costs **{config['post_cost']}** coins to play.", ephemeral=True)
+                    return
+                
+                # Deduct cost
+                await connection.execute(
+                    "UPDATE economy SET supercoins = supercoins - $3 WHERE guild_id = $1 AND user_id = $2",
+                    interaction.guild.id, interaction.user.id, config['post_cost']
+                )
 
         # Defer response since image downloading and processing takes time
         await interaction.response.defer(ephemeral=True)

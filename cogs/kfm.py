@@ -70,10 +70,11 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
         channel="The channel where KFM will be active",
         role="The role required to vote",
         reward="Amount of Supercoins given per vote",
-        message="The ephemeral message shown to users after they vote"
+        message="The ephemeral message shown to users after they vote",
+        post_cost="Amount of Supercoins it costs to post an image (default 0)"
     )
     @app_commands.checks.has_permissions(administrator=True)
-    async def setup(self, interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role, reward: int, message: str):
+    async def setup(self, interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role, reward: int, message: str, post_cost: int = 0):
         if not self.bot.db_pool:
             await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
@@ -83,15 +84,22 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
             coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
             await connection.execute(
                 """
-                INSERT INTO kfm_configs (guild_id, channel_id, role_id, reward_amount, custom_message)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO kfm_configs (guild_id, channel_id, role_id, reward_amount, custom_message, post_cost)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (guild_id) DO UPDATE 
-                SET channel_id = $2, role_id = $3, reward_amount = $4, custom_message = $5
+                SET channel_id = $2, role_id = $3, reward_amount = $4, custom_message = $5, post_cost = $6
                 """,
-                interaction.guild.id, channel.id, role.id, reward, message
+                interaction.guild.id, channel.id, role.id, reward, message, post_cost
             )
             
-        self.bot.cache['kfm'][interaction.guild.id] = channel.id
+        self.bot.cache['kfm'][interaction.guild.id] = {
+            'guild_id': interaction.guild.id,
+            'channel_id': channel.id,
+            'role_id': role.id,
+            'reward_amount': reward,
+            'custom_message': message,
+            'post_cost': post_cost
+        }
             
         await interaction.response.send_message(
             f"Successfully configured **Kiss, Fuck, Marry**!\n"
@@ -128,24 +136,34 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
             return
 
         # Cache check: O(1) latency
-        kfm_channel_id = self.bot.cache['kfm'].get(message.guild.id)
-        if not kfm_channel_id or message.channel.id != kfm_channel_id:
-            return
-
-        # Fetch config from DB since we are actually in the game channel
-        async with self.bot.db_pool.acquire() as connection:
-            config = await connection.fetchrow(
-                "SELECT * FROM kfm_configs WHERE guild_id = $1",
-                message.guild.id
-            )
-
-        if not config:
+        config = self.bot.cache['kfm'].get(message.guild.id)
+        if not config or message.channel.id != config['channel_id']:
             return
 
         # Check if the message contains media (attachments or links)
         has_media = bool(message.attachments) or re.search(r"https?://\S+", message.content)
         if not has_media:
             return
+
+        async with self.bot.db_pool.acquire() as connection:
+            if config.get('post_cost', 0) > 0:
+                user_bal = await connection.fetchrow(
+                    "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
+                    message.guild.id, message.author.id
+                )
+                if not user_bal or user_bal['supercoins'] < config['post_cost']:
+                    try:
+                        await message.delete()
+                        await message.channel.send(f"{message.author.mention} You don't have enough coins to post here! It costs **{config['post_cost']}** coins to enter.", delete_after=5)
+                    except discord.Forbidden:
+                        pass
+                    return
+                
+                # Deduct cost
+                await connection.execute(
+                    "UPDATE economy SET supercoins = supercoins - $3 WHERE guild_id = $1 AND user_id = $2",
+                    message.guild.id, message.author.id, config['post_cost']
+                )
 
         # Prepare to repost
         files = []
