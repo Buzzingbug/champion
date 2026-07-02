@@ -234,9 +234,33 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
         forty_eight_hours_ago_ms = int((time.time() - (48 * 60 * 60)) * 1000)
         max_snowflake = (forty_eight_hours_ago_ms - 1420070400000) << 22
 
-        # Delete any puzzle where message_id < max_snowflake (older than 48 hrs)
         async with self.bot.db_pool.acquire() as connection:
             try:
+                # Select stale puzzles to delete their Discord messages
+                stale_puzzles = await connection.fetch(
+                    "SELECT message_id, guild_id FROM puzzle2_active WHERE message_id < $1",
+                    max_snowflake
+                )
+                
+                for puzzle in stale_puzzles:
+                    guild_id = puzzle['guild_id']
+                    message_id = puzzle['message_id']
+                    
+                    # Fetch config to get channel_id
+                    config = await connection.fetchrow(
+                        "SELECT channel_id FROM puzzle2_configs WHERE guild_id = $1",
+                        guild_id
+                    )
+                    if config:
+                        channel = self.bot.get_channel(config['channel_id'])
+                        if channel:
+                            try:
+                                msg = await channel.fetch_message(message_id)
+                                await msg.delete()
+                            except (discord.NotFound, discord.Forbidden):
+                                pass
+
+                # Delete from DB
                 result = await connection.execute(
                     "DELETE FROM puzzle2_active WHERE message_id < $1",
                     max_snowflake
