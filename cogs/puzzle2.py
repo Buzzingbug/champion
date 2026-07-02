@@ -4,6 +4,7 @@ from discord.ext import commands
 import io
 import random
 from PIL import Image, ImageDraw
+import time
 
 class SlidingPuzzleView(discord.ui.View):
     def __init__(self, db_pool, puzzle_message_id: int, original_author_id: int, original_msg_jump_url: str, pieces: list, board: list, empty_idx: int, reward: int, guild_id: int, channel_id: int, coin_name: str):
@@ -219,6 +220,34 @@ class StartPuzzleView(discord.ui.View):
 class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
     def __init__(self, bot):
         self.bot = bot
+        self.cleanup_loop.start()
+
+    def cog_unload(self):
+        self.cleanup_loop.cancel()
+
+    @tasks.loop(hours=12)
+    async def cleanup_loop(self):
+        if not self.bot.db_pool:
+            return
+            
+        # 48 hours ago in milliseconds
+        forty_eight_hours_ago_ms = int((time.time() - (48 * 60 * 60)) * 1000)
+        max_snowflake = (forty_eight_hours_ago_ms - 1420070400000) << 22
+
+        # Delete any puzzle where message_id < max_snowflake (older than 48 hrs)
+        async with self.bot.db_pool.acquire() as connection:
+            try:
+                result = await connection.execute(
+                    "DELETE FROM puzzle2_active WHERE message_id < $1",
+                    max_snowflake
+                )
+                print(f"Auto-Cleanup: Removed stale puzzles ({result})")
+            except Exception as e:
+                print(f"Error during puzzle cleanup: {e}")
+
+    @cleanup_loop.before_loop
+    async def before_cleanup_loop(self):
+        await self.bot.wait_until_ready()
 
     @app_commands.command(name="setup", description="Configure the Sliding Puzzle feature.")
     @app_commands.describe(
