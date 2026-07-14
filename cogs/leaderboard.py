@@ -132,7 +132,7 @@ class LeaderboardView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
 
-class LeaderboardCog(commands.GroupCog, group_name="economy"):
+class LeaderboardCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
