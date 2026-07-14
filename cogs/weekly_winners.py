@@ -148,7 +148,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
                 # Process each game
                 await self._process_game_winner(
                     connection, guild, channel, min_snowflake,
-                    "smash_votes", dash['smash_msg'], dash['smash_prize'], "Smash or Pass", discord.Color.purple()
+                    "smash_votes", dash['smash_msg'], dash['smash_prize'], "Smash or Pass", discord.Color.purple(), vote_filter="smash"
                 )
                 await self._process_game_winner(
                     connection, guild, channel, min_snowflake,
@@ -162,16 +162,23 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
                 if not manual_guild_id:
                     await connection.execute("UPDATE weekly_dashboards SET last_posted = $1 WHERE guild_id = $2", today, guild_id)
 
-    async def _process_game_winner(self, connection, guild, channel, min_snowflake, table_name, custom_msg, prize, title, color):
+    async def _process_game_winner(self, connection, guild, channel, min_snowflake, table_name, custom_msg, prize, title, color, vote_filter=None):
         # Find the message with the highest votes in the last 7 days
-        winner = await connection.fetchrow(f"""
+        query = f"""
             SELECT message_id, COUNT(*) as vote_count 
             FROM {table_name} 
             WHERE message_id > $1 
+        """
+        if vote_filter:
+            query += f" AND vote_choice = '{vote_filter}' "
+            
+        query += """
             GROUP BY message_id 
             ORDER BY vote_count DESC 
             LIMIT 1
-        """, min_snowflake)
+        """
+        
+        winner = await connection.fetchrow(query, min_snowflake)
 
         if not winner:
             return
