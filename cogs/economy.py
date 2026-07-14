@@ -11,8 +11,7 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
         if not self.bot.db_pool:
             await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
             return
-            
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         async with self.bot.db_pool.acquire() as connection:
             economy_record = await connection.fetchrow(
@@ -37,12 +36,12 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             )
             embed.add_field(name="Current Balance", value=f"**{balance:,} {coin_name}**", inline=False)
             embed.set_image(url="attachment://bank_banner.png")
-            embed.set_footer(text="Secured by Champion Bot Servers")
+            embed.set_footer(text="Secured by Botforge services")
 
-            await interaction.followup.send(file=file, embed=embed)
+            await interaction.followup.send(file=file, embed=embed, ephemeral=True)
         except Exception as e:
             print(f"Error sending bank embed: {e}")
-            await interaction.followup.send(f"Bank error: Your balance is **{balance:,} {coin_name}**.")
+            await interaction.followup.send(f"Bank error: Your balance is **{balance:,} {coin_name}**.", ephemeral=True)
 
     @app_commands.command(name="add", description="Add coins to a user's bank account.")
     @app_commands.describe(user="The user to give coins to", amount="The amount of coins to give")
