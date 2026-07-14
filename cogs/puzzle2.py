@@ -142,7 +142,7 @@ class StartPuzzleView(discord.ui.View):
         self.db_pool = db_pool
         self.message_id = message_id
 
-    @discord.ui.button(label="Play Puzzle", style=discord.ButtonStyle.success, emoji="🎮", custom_id="play_sliding_puzzle")
+    @discord.ui.button(label="Play in DMs", style=discord.ButtonStyle.success, emoji="🎮", custom_id="play_sliding_puzzle")
     async def play_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         
