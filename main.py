@@ -168,6 +168,23 @@ class GamesBot(commands.Bot):
                     last_posted DATE
                 );
             """)
+            
+            # Safely add the post_cost column to existing tables if they were created before this update
+            try:
+                await connection.execute("ALTER TABLE server_configs ADD COLUMN post_cost INT DEFAULT 0;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
+            try:
+                await connection.execute("ALTER TABLE kfm_configs ADD COLUMN post_cost INT DEFAULT 0;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
+            try:
+                await connection.execute("ALTER TABLE rol_configs ADD COLUMN post_cost INT DEFAULT 0;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
             print("Database tables verified/created.")
 
     async def load_caches(self):
