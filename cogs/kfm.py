@@ -4,20 +4,26 @@ from discord.ext import commands
 import re
 
 class KFMView(discord.ui.View):
-    def __init__(self, db_pool, reward: int, custom_msg: str, role_id: int):
+    def __init__(self, bot):
         super().__init__(timeout=None) # Persists forever
-        self.db_pool = db_pool
-        self.reward = reward
-        self.custom_msg = custom_msg
-        self.role_id = role_id
+        self.bot = bot
 
     async def process_vote(self, interaction: discord.Interaction, choice: str):
+        config = self.bot.cache['kfm'].get(interaction.guild.id)
+        if not config:
+            await interaction.response.send_message("KFM is not configured for this server.", ephemeral=True)
+            return
+
+        role_id = config['role_id']
+        reward = config['reward_amount']
+        custom_msg = config['custom_message']
+
         # Check role
-        if self.role_id not in [r.id for r in interaction.user.roles]:
+        if role_id not in [r.id for r in interaction.user.roles]:
             await interaction.response.send_message("You do not have the required role to vote on this!", ephemeral=True)
             return
 
-        async with self.db_pool.acquire() as connection:
+        async with self.bot.db_pool.acquire() as connection:
             # Check if already voted
             record = await connection.fetchrow(
                 "SELECT 1 FROM kfm_votes WHERE message_id = $1 AND user_id = $2",
@@ -42,21 +48,21 @@ class KFMView(discord.ui.View):
                 ON CONFLICT (guild_id, user_id) 
                 DO UPDATE SET supercoins = economy.supercoins + $3
                 """,
-                interaction.guild.id, interaction.user.id, self.reward
+                interaction.guild.id, interaction.user.id, reward
             )
 
         # Send custom success message
-        await interaction.response.send_message(self.custom_msg, ephemeral=True)
+        await interaction.response.send_message(custom_msg, ephemeral=True)
 
-    @discord.ui.button(label="Kiss", style=discord.ButtonStyle.primary, emoji="💋")
+    @discord.ui.button(label="Kiss", style=discord.ButtonStyle.primary, emoji="💋", custom_id="kfm_kiss")
     async def kiss_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.process_vote(interaction, "kiss")
 
-    @discord.ui.button(label="Fuck", style=discord.ButtonStyle.danger, emoji="😈")
+    @discord.ui.button(label="Fuck", style=discord.ButtonStyle.danger, emoji="😈", custom_id="kfm_fuck")
     async def fuck_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.process_vote(interaction, "fuck")
 
-    @discord.ui.button(label="Marry", style=discord.ButtonStyle.success, emoji="💍")
+    @discord.ui.button(label="Marry", style=discord.ButtonStyle.success, emoji="💍", custom_id="kfm_marry")
     async def marry_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.process_vote(interaction, "marry")
 
@@ -64,6 +70,7 @@ class KFMView(discord.ui.View):
 class KFMCog(commands.GroupCog, group_name="kfm"):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.add_view(KFMView(self.bot))
 
     @app_commands.command(name="setup", description="Configure the Kiss, Fuck, Marry feature for this server.")
     @app_commands.describe(
@@ -175,12 +182,7 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
         )
         embed.set_image(url=f"attachment://{file.filename}")
 
-        view = KFMView(
-            db_pool=self.bot.db_pool,
-            reward=config['reward_amount'],
-            custom_msg=config['custom_message'],
-            role_id=config['role_id']
-        )
+        view = KFMView(self.bot)
 
         try:
             await interaction.channel.send(embed=embed, file=file, view=view)
@@ -241,12 +243,7 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
                 image_attached = True
                 break
 
-        view = KFMView(
-            db_pool=self.bot.db_pool,
-            reward=config['reward_amount'],
-            custom_msg=config['custom_message'],
-            role_id=config['role_id']
-        )
+        view = KFMView(self.bot)
 
         try:
             # Delete original message
