@@ -130,6 +130,64 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
         else:
             await interaction.response.send_message("Successfully reset and disabled **Kiss, Fuck, Marry** for this server.", ephemeral=True)
 
+    @app_commands.command(name="submit", description="Submit an image to Kiss, Fuck, Marry.")
+    @app_commands.describe(image="The image to submit")
+    async def submit(self, interaction: discord.Interaction, image: discord.Attachment):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
+            return
+
+        config = self.bot.cache['kfm'].get(interaction.guild.id)
+        if not config:
+            await interaction.response.send_message("KFM is not configured for this server.", ephemeral=True)
+            return
+
+        if interaction.channel.id != config['channel_id']:
+            await interaction.response.send_message(f"You can only submit images in <#{config['channel_id']}>.", ephemeral=True)
+            return
+
+        if not image.content_type or not image.content_type.startswith('image/'):
+            await interaction.response.send_message("Attachment must be an image.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        async with self.bot.db_pool.acquire() as connection:
+            if config.get('post_cost', 0) > 0:
+                user_bal = await connection.fetchrow(
+                    "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
+                    interaction.guild.id, interaction.user.id
+                )
+                if not user_bal or user_bal['supercoins'] < config['post_cost']:
+                    await interaction.followup.send(f"You don't have enough coins to post here! It costs **{config['post_cost']}** coins to enter.", ephemeral=True)
+                    return
+                
+                # Deduct cost
+                await connection.execute(
+                    "UPDATE economy SET supercoins = supercoins - $3 WHERE guild_id = $1 AND user_id = $2",
+                    interaction.guild.id, interaction.user.id, config['post_cost']
+                )
+
+        file = await image.to_file()
+        embed = discord.Embed(
+            description=f"**Submitted by {interaction.user.mention}**",
+            color=discord.Color.brand_red()
+        )
+        embed.set_image(url=f"attachment://{file.filename}")
+
+        view = KFMView(
+            db_pool=self.bot.db_pool,
+            reward=config['reward_amount'],
+            custom_msg=config['custom_message'],
+            role_id=config['role_id']
+        )
+
+        try:
+            await interaction.channel.send(embed=embed, file=file, view=view)
+            await interaction.followup.send("Successfully submitted!")
+        except Exception as e:
+            await interaction.followup.send(f"Failed to submit: {e}")
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild or not self.bot.db_pool:

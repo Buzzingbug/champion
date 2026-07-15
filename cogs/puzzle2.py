@@ -137,10 +137,9 @@ class SlidingPuzzleView(discord.ui.View):
             await interaction.response.defer()
 
 class StartPuzzleView(discord.ui.View):
-    def __init__(self, db_pool, message_id: int):
+    def __init__(self, db_pool):
         super().__init__(timeout=None)
         self.db_pool = db_pool
-        self.message_id = message_id
 
     @discord.ui.button(label="Play in DMs", style=discord.ButtonStyle.success, emoji="🎮", custom_id="play_sliding_puzzle")
     async def play_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -149,7 +148,7 @@ class StartPuzzleView(discord.ui.View):
         async with self.db_pool.acquire() as connection:
             record = await connection.fetchrow(
                 "SELECT image_data FROM puzzle2_active WHERE message_id = $1",
-                self.message_id
+                interaction.message.id
             )
             
             if not record:
@@ -193,7 +192,7 @@ class StartPuzzleView(discord.ui.View):
 
         view = SlidingPuzzleView(
             db_pool=self.db_pool,
-            puzzle_message_id=self.message_id,
+            puzzle_message_id=interaction.message.id,
             original_author_id=interaction.message.author.id, # Bot's ID or whoever, actually doesn't matter much
             original_msg_jump_url=interaction.message.jump_url,
             pieces=pieces,
@@ -221,6 +220,7 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
     def __init__(self, bot):
         self.bot = bot
         self.cleanup_loop.start()
+        self.bot.add_view(StartPuzzleView(self.bot.db_pool))
 
     def cog_unload(self):
         self.cleanup_loop.cancel()
@@ -372,8 +372,8 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
                     msg.id, interaction.guild.id, compressed_bytes
                 )
                 
-            # Add view with message_id now that we have it
-            view = StartPuzzleView(self.bot.db_pool, msg.id)
+            # Add view
+            view = StartPuzzleView(self.bot.db_pool)
             await msg.edit(view=view)
                 
             await interaction.followup.send("Sliding puzzle created successfully!")
