@@ -75,6 +75,39 @@ class CategoryRewardsCog(commands.GroupCog, group_name="category"):
         else:
             await interaction.response.send_message(f"Successfully disabled media rewards for the **{category.name}** category.", ephemeral=True)
 
+    @app_commands.command(name="config", description="View the media rewards configuration for categories.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def config(self, interaction: discord.Interaction):
+        guild_categories = [c for c in self.bot.cache['categories'].values() if c['guild_id'] == interaction.guild.id]
+        
+        if not guild_categories:
+            await interaction.response.send_message("No categories have media rewards configured for this server.", ephemeral=True)
+            return
+            
+        embed = discord.Embed(
+            title="📂 Category Rewards Configuration",
+            color=discord.Color.blue()
+        )
+        
+        async with self.bot.db_pool.acquire() as connection:
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
+            
+        for config in guild_categories:
+            category = interaction.guild.get_channel(config['category_id'])
+            name = category.name if category else f"Unknown Category ({config['category_id']})"
+            notify = config.get('notify', True)
+            embed.add_field(
+                name=f"{name}",
+                value=(f"**Reward:** {config['reward_amount']} {coin_name}\n"
+                       f"**Daily Limit:** {config['daily_limit']} {coin_name}\n"
+                       f"**Notify on limit:** {notify}\n"
+                       f"**Limit Message:** `{config['custom_message']}`"),
+                inline=False
+            )
+            
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild or not self.bot.db_pool:
@@ -215,6 +248,39 @@ class ChannelRewardsCog(commands.GroupCog, group_name="channel_reward"):
             await interaction.response.send_message(f"The channel {channel.mention} does not have rewards configured.", ephemeral=True)
         else:
             await interaction.response.send_message(f"Successfully disabled media rewards for {channel.mention}.", ephemeral=True)
+
+    @app_commands.command(name="config", description="View the media rewards configuration for text channels.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def config(self, interaction: discord.Interaction):
+        guild_channels = [c for c in self.bot.cache['channel_rewards'].values() if c['guild_id'] == interaction.guild.id]
+        
+        if not guild_channels:
+            await interaction.response.send_message("No text channels have media rewards configured for this server.", ephemeral=True)
+            return
+            
+        embed = discord.Embed(
+            title="💬 Channel Rewards Configuration",
+            color=discord.Color.green()
+        )
+        
+        async with self.bot.db_pool.acquire() as connection:
+            coin_record = await connection.fetchrow("SELECT coin_name FROM server_settings WHERE guild_id = $1", interaction.guild.id)
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
+            
+        for config in guild_channels:
+            channel = interaction.guild.get_channel(config['channel_id'])
+            name = channel.mention if channel else f"Unknown Channel ({config['channel_id']})"
+            notify = config.get('notify', True)
+            embed.add_field(
+                name=f"{name}",
+                value=(f"**Reward:** {config['reward_amount']} {coin_name}\n"
+                       f"**Daily Limit:** {config['daily_limit']} {coin_name}\n"
+                       f"**Notify on limit:** {notify}\n"
+                       f"**Limit Message:** `{config['custom_message']}`"),
+                inline=False
+            )
+            
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
