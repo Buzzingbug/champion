@@ -185,6 +185,16 @@ class GamesBot(commands.Bot):
             except asyncpg.exceptions.DuplicateColumnError:
                 pass
                 
+            try:
+                await connection.execute("ALTER TABLE category_configs ADD COLUMN notify BOOLEAN DEFAULT TRUE;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
+            try:
+                await connection.execute("ALTER TABLE channel_reward_configs ADD COLUMN notify BOOLEAN DEFAULT TRUE;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
             print("Database tables verified/created.")
 
     async def load_caches(self):
