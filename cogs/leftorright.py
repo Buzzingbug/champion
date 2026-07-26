@@ -234,5 +234,125 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             await interaction.followup.send("An error occurred while processing the images. Please ensure they are valid images and try again.")
 
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or not message.guild or not self.bot.db_pool:
+            return
+
+        # Check cache (O(1))
+        config = self.bot.cache['lor'].get(message.guild.id)
+        if not config:
+            return
+            
+        if message.channel.id != config['channel_id']:
+            return
+
+        # Check if they are trying to post images
+        has_media = bool(message.attachments)
+        if not has_media:
+            return
+
+        valid_images = [att for att in message.attachments if att.content_type and att.content_type.startswith('image/')]
+        
+        if len(valid_images) != 2:
+            try:
+                await message.delete()
+                await message.channel.send(f"{message.author.mention} Please post exactly two images at once or together for Left or Right!", delete_after=5)
+            except discord.Forbidden:
+                pass
+            return
+            
+        # Deduct post cost
+        async with self.bot.db_pool.acquire() as connection:
+            if config.get('post_cost', 0) > 0:
+                user_bal = await connection.fetchrow(
+                    "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
+                    message.guild.id, message.author.id
+                )
+                if not user_bal or user_bal['supercoins'] < config['post_cost']:
+                    try:
+                        await message.delete()
+                        await message.channel.send(f"{message.author.mention} You don't have enough coins to post! It costs **{config['post_cost']}** coins.", delete_after=5)
+                    except discord.Forbidden:
+                        pass
+                    return
+                
+                # Deduct cost
+                await connection.execute(
+                    "UPDATE economy SET supercoins = supercoins - $3 WHERE guild_id = $1 AND user_id = $2",
+                    message.guild.id, message.author.id, config['post_cost']
+                )
+
+        temp_msg = None
+        try:
+            temp_msg = await message.channel.send(f"Processing your images, {message.author.mention}...")
+            
+            # Download images
+            left_bytes = await valid_images[0].read()
+            right_bytes = await valid_images[1].read()
+            
+            # Open with Pillow
+            img1 = Image.open(io.BytesIO(left_bytes)).convert("RGBA")
+            img2 = Image.open(io.BytesIO(right_bytes)).convert("RGBA")
+            
+            # Scale them to the same height (e.g. 500px)
+            target_height = 500
+            
+            aspect1 = img1.width / img1.height
+            img1_resized = img1.resize((int(target_height * aspect1), target_height))
+            
+            aspect2 = img2.width / img2.height
+            img2_resized = img2.resize((int(target_height * aspect2), target_height))
+            
+            # Create a blank image to hold both
+            spacing = 20
+            total_width = img1_resized.width + img2_resized.width + spacing
+            
+            new_img = Image.new("RGBA", (total_width, target_height), (0, 0, 0, 0))
+            new_img.paste(img1_resized, (0, 0))
+            new_img.paste(img2_resized, (img1_resized.width + spacing, 0))
+            
+            # Save stitched image to buffer
+            final_buffer = io.BytesIO()
+            new_img.save(final_buffer, format="PNG")
+            final_buffer.seek(0)
+            
+            file = discord.File(fp=final_buffer, filename="leftorright.png")
+            
+            title = message.content if message.content else "Left or Right?"
+            
+            # Prepare embed and view
+            embed = discord.Embed(
+                title=title,
+                description=f"**Submitted by {message.author.mention}**",
+                color=discord.Color.blue()
+            )
+            embed.set_image(url="attachment://leftorright.png")
+            
+            view = LORView(self.bot)
+            
+            # Delete original user message & temp message
+            try:
+                await message.delete()
+            except:
+                pass
+                
+            if temp_msg:
+                try:
+                    await temp_msg.delete()
+                except:
+                    pass
+                
+            # Send the result to the channel
+            await message.channel.send(embed=embed, file=file, view=view)
+            
+        except Exception as e:
+            print(f"Error processing images in LOR drop: {e}")
+            if temp_msg:
+                try:
+                    await temp_msg.edit(content=f"{message.author.mention} An error occurred while processing the images. Please ensure they are valid images and try again.")
+                except:
+                    pass
+
 async def setup(bot):
     await bot.add_cog(LORCog(bot))
