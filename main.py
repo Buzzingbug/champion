@@ -14,6 +14,9 @@ class GamesBot(commands.Bot):
         intents.message_content = True
         super().__init__(command_prefix='!', intents=intents)
         
+        import time
+        self.start_time = time.time()
+        
         self.db_pool = None
         self.redis_pool = None
 

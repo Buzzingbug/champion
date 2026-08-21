@@ -7,40 +7,57 @@ class UtilsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="ping", description="Check the bot's connection status and latency.")
-    async def ping(self, interaction: discord.Interaction):
-        start_time = time.time()
+    def get_uptime(self):
+        if not hasattr(self.bot, 'start_time'):
+            return "Just started"
+            
+        uptime_seconds = int(time.time() - self.bot.start_time)
+        days = uptime_seconds // 86400
+        hours = (uptime_seconds % 86400) // 3600
+        minutes = (uptime_seconds % 3600) // 60
+        seconds = uptime_seconds % 60
         
-        # Defer the response to calculate Discord API round-trip latency
+        parts = []
+        if days > 0:
+            parts.append(f"{days}d")
+        if hours > 0 or days > 0:
+            parts.append(f"{hours}h")
+        if minutes > 0 or hours > 0 or days > 0:
+            parts.append(f"{minutes}m")
+        parts.append(f"{seconds}s")
+        
+        return " ".join(parts)
+
+    @app_commands.command(name="ping", description="Check the bot's system status.")
+    async def ping(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
-        end_time = time.time()
-        api_latency = round((end_time - start_time) * 1000)
-        websocket_latency = round(self.bot.latency * 1000)
+        latency = round(self.bot.latency * 1000)
+        uptime_str = self.get_uptime()
+        
+        # Check Redis connection
+        redis_status = "❌ Disconnected"
+        if hasattr(self.bot, 'redis_pool') and self.bot.redis_pool:
+            try:
+                await self.bot.redis_pool.ping()
+                redis_status = "✅ Connected"
+            except Exception:
+                redis_status = "❌ Error"
+                
+        shard_id = interaction.guild.shard_id if interaction.guild else 0
         
         embed = discord.Embed(
-            title="🏓 Pong!",
-            color=discord.Color.green()
+            title="🏓 System Status",
+            color=0x2b2d31 # Discord dark theme color
         )
         
-        embed.add_field(name="WebSocket Latency", value=f"`{websocket_latency}ms`", inline=True)
-        embed.add_field(name="API Latency", value=f"`{api_latency}ms`", inline=True)
+        embed.add_field(name="Latency", value=f"`{latency}ms`", inline=True)
+        embed.add_field(name="Uptime", value=f"`{uptime_str}`", inline=True)
+        embed.add_field(name="Redis Cache", value=f"`{redis_status}`", inline=True)
         
-        # Check database latency if connected
-        if self.bot.db_pool:
-            db_start = time.time()
-            try:
-                async with self.bot.db_pool.acquire() as connection:
-                    await connection.execute("SELECT 1")
-                db_latency = round((time.time() - db_start) * 1000)
-                embed.add_field(name="Database Latency", value=f"`{db_latency}ms`", inline=True)
-            except Exception as e:
-                embed.add_field(name="Database Latency", value="`Error`", inline=True)
-        else:
-            embed.add_field(name="Database Latency", value="`Disconnected`", inline=True)
-            
+        embed.add_field(name="Shard ID", value=f"`{shard_id}`", inline=True)
+        
         await interaction.followup.send(embed=embed)
-
 
 async def setup(bot):
     await bot.add_cog(UtilsCog(bot))
