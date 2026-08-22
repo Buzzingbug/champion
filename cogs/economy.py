@@ -27,15 +27,15 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
 
         try:
-            file = discord.File("assets/bank_banner.png", filename="bank_banner.png")
+            file = discord.File("assets/aurum_bank.jpg", filename="aurum_bank.jpg")
             
             embed = discord.Embed(
-                title=f"🏦 Central Bank of {interaction.guild.name}",
-                description=f"Welcome to your private vault, {interaction.user.mention}.",
+                title=f"🏦 AURUM Private Digital Banking",
+                description=f"Welcome to your ultra-secure digital vault, {interaction.user.mention}.",
                 color=discord.Color.gold()
             )
             embed.add_field(name="Current Balance", value=f"**{balance:,} {coin_name}**", inline=False)
-            embed.set_image(url="attachment://bank_banner.png")
+            embed.set_image(url="attachment://aurum_bank.jpg")
             embed.set_footer(text="Secured by Botforge services")
 
             await interaction.followup.send(file=file, embed=embed, ephemeral=True)
