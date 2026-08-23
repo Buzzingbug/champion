@@ -97,5 +97,28 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             f"Successfully updated the server's currency name to **{name}**!\nAll minigames will now use this name."
         )
 
+    @app_commands.command(name="check", description="[ADMIN] Check a user's bank account balance.")
+    @app_commands.describe(user="The user to check the balance of")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def check(self, interaction: discord.Interaction, user: discord.Member):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("Database is not connected. Please try again later.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as connection:
+            economy_record = await connection.fetchrow(
+                "SELECT supercoins FROM economy WHERE guild_id = $1 AND user_id = $2",
+                interaction.guild.id, user.id
+            )
+            balance = economy_record['supercoins'] if economy_record else 0
+
+            coin_record = await connection.fetchrow(
+                "SELECT coin_name FROM server_settings WHERE guild_id = $1", 
+                interaction.guild.id
+            )
+            coin_name = coin_record['coin_name'] if coin_record else 'Supercoins'
+
+        await interaction.response.send_message(f"**{user.display_name}** currently has **{balance:,} {coin_name}** in their account.", ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(EconomyCog(bot))
