@@ -67,12 +67,12 @@ class KFMView(discord.ui.View):
         await self.process_vote(interaction, "marry")
 
 
-class KFMCog(commands.GroupCog, group_name="kfm"):
+class KFMCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.add_view(KFMView(self.bot))
 
-    @app_commands.command(name="setup", description="Configure the Kiss, Fuck, Marry feature for this server.")
+    @app_commands.command(name="kfm_setup", description="Configure the Kiss, Fuck, Marry feature for this server.")
     @app_commands.describe(
         channel="The channel where KFM will be active",
         role="The role required to vote",
@@ -116,7 +116,7 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
             f"Custom Message: `{message}`"
         )
 
-    @app_commands.command(name="reset", description="Reset and disable the Kiss, Fuck, Marry feature for this server.")
+    @app_commands.command(name="kfm_reset", description="Reset and disable the Kiss, Fuck, Marry feature for this server.")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset(self, interaction: discord.Interaction):
         if not self.bot.db_pool:
@@ -137,7 +137,7 @@ class KFMCog(commands.GroupCog, group_name="kfm"):
         else:
             await interaction.response.send_message("Successfully reset and disabled **Kiss, Fuck, Marry** for this server.", ephemeral=True)
 
-    @app_commands.command(name="submit", description="Submit an image to Kiss, Fuck, Marry.")
+    @app_commands.command(name="kfm_submit", description="Submit an image to Kiss, Fuck, Marry.")
     @app_commands.describe(image="The image to submit")
     async def submit(self, interaction: discord.Interaction, image: discord.Attachment):
         if not self.bot.db_pool:

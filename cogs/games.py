@@ -2,11 +2,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-class GamesCog(commands.GroupCog, group_name="games"):
+class GamesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="config", description="View the configuration of all minigames.")
+    @app_commands.command(name="games_config", description="View the configuration of all minigames.")
     @app_commands.checks.has_permissions(administrator=True)
     async def config(self, interaction: discord.Interaction):
         if not self.bot.db_pool:

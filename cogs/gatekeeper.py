@@ -2,11 +2,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-class GatekeeperCog(commands.GroupCog, group_name="gate"):
+class GatekeeperCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup", description="Restrict a channel so users must have a minimum coin balance to speak.")
+    @app_commands.command(name="gate_setup", description="Restrict a channel so users must have a minimum coin balance to speak.")
     @app_commands.describe(
         channel="The channel to restrict",
         amount="The minimum amount of coins required to speak",
@@ -52,7 +52,7 @@ class GatekeeperCog(commands.GroupCog, group_name="gate"):
             f"Deletion Message: `{message}`"
         )
 
-    @app_commands.command(name="remove", description="Remove the coin restriction from a channel.")
+    @app_commands.command(name="gate_remove", description="Remove the coin restriction from a channel.")
     @app_commands.describe(channel="The channel to un-restrict")
     @app_commands.checks.has_permissions(administrator=True)
     async def remove(self, interaction: discord.Interaction, channel: discord.TextChannel):

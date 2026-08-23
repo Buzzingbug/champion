@@ -63,12 +63,12 @@ class SmashOrPassView(discord.ui.View):
         await self.process_vote(interaction, "pass")
 
 
-class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
+class SmashOrPassCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.add_view(SmashOrPassView(self.bot))
 
-    @app_commands.command(name="setup", description="Configure the Smash or Pass feature for this server.")
+    @app_commands.command(name="smash_setup", description="Configure the Smash or Pass feature for this server.")
     @app_commands.describe(
         channel="The channel where Smash or Pass will be active",
         role="The role required to vote",
@@ -112,7 +112,7 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
             f"Custom Message: `{message}`"
         )
 
-    @app_commands.command(name="reset", description="Reset and disable the Smash or Pass feature for this server.")
+    @app_commands.command(name="smash_reset", description="Reset and disable the Smash or Pass feature for this server.")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset(self, interaction: discord.Interaction):
         if not self.bot.db_pool:
@@ -133,7 +133,7 @@ class SmashOrPassCog(commands.GroupCog, group_name="smashorpass"):
         else:
             await interaction.response.send_message("Successfully reset and disabled **Smash or Pass** for this server.", ephemeral=True)
 
-    @app_commands.command(name="submit", description="Submit an image to Smash or Pass.")
+    @app_commands.command(name="smash_submit", description="Submit an image to Smash or Pass.")
     @app_commands.describe(image="The image to submit")
     async def submit(self, interaction: discord.Interaction, image: discord.Attachment):
         if not self.bot.db_pool:

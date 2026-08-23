@@ -89,11 +89,11 @@ class PuzzleView(discord.ui.View):
     async def solve_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(PuzzleModal(self.db_pool, interaction.message.id))
 
-class PuzzleCog(commands.GroupCog, group_name="puzzle"):
+class PuzzleCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup", description="Configure the Jigsaw Puzzle feature for this server.")
+    @app_commands.command(name="jigsaw_setup", description="Configure the Jigsaw Puzzle feature for this server.")
     @app_commands.describe(
         channel="The channel where puzzles will be posted",
         reward="Amount of Supercoins given to the solver"
@@ -123,7 +123,7 @@ class PuzzleCog(commands.GroupCog, group_name="puzzle"):
             f"Reward: **{reward} {coin_name}**"
         )
 
-    @app_commands.command(name="submit", description="Submit an image to be scrambled into a puzzle.")
+    @app_commands.command(name="jigsaw_submit", description="Submit an image to be scrambled into a puzzle.")
     @app_commands.describe(
         image="The image to scramble",
         title="Optional title for the puzzle"

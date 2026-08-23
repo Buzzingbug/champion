@@ -5,7 +5,7 @@ import datetime
 import time
 import re
 
-class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
+class WeeklyWinnersCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.weekly_loop.start()
@@ -13,7 +13,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
     def cog_unload(self):
         self.weekly_loop.cancel()
 
-    @app_commands.command(name="channel", description="Set the dashboard channel for weekly winners.")
+    @app_commands.command(name="weekly_channel", description="Set the dashboard channel for weekly winners.")
     @app_commands.checks.has_permissions(administrator=True)
     async def setup_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         if not self.bot.db_pool:
@@ -32,7 +32,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
             )
         await interaction.response.send_message(f"Weekly Winners dashboard channel set to {channel.mention}.", ephemeral=True)
 
-    @app_commands.command(name="smash", description="Configure the weekly Smash or Pass winner message and prize.")
+    @app_commands.command(name="weekly_smash", description="Configure the weekly Smash or Pass winner message and prize.")
     @app_commands.describe(
         message="Custom message. Use {user} to mention the winner.",
         prize="Amount of coins awarded to the winner"
@@ -53,7 +53,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
             )
         await interaction.response.send_message(f"Smash or Pass weekly config saved! Prize: **{prize}**", ephemeral=True)
 
-    @app_commands.command(name="kfm", description="Configure the weekly Kiss Fuck Marry winner message and prize.")
+    @app_commands.command(name="weekly_kfm", description="Configure the weekly Kiss Fuck Marry winner message and prize.")
     @app_commands.describe(
         message="Custom message. Use {user} to mention the winner.",
         prize="Amount of coins awarded to the winner"
@@ -74,7 +74,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
             )
         await interaction.response.send_message(f"KFM weekly config saved! Prize: **{prize}**", ephemeral=True)
 
-    @app_commands.command(name="rol", description="Configure the weekly Left or Right winner message and prize.")
+    @app_commands.command(name="weekly_rol", description="Configure the weekly Left or Right winner message and prize.")
     @app_commands.describe(
         message="Custom message. Use {user} to mention the winner.",
         prize="Amount of coins awarded to the winner"
@@ -95,7 +95,7 @@ class WeeklyWinnersCog(commands.GroupCog, group_name="weekly"):
             )
         await interaction.response.send_message(f"Left or Right weekly config saved! Prize: **{prize}**", ephemeral=True)
 
-    @app_commands.command(name="trigger", description="[ADMIN] Manually trigger the weekly winners calculation.")
+    @app_commands.command(name="weekly_trigger", description="[ADMIN] Manually trigger the weekly winners calculation.")
     @app_commands.checks.has_permissions(administrator=True)
     async def trigger(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)

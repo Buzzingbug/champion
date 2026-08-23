@@ -216,7 +216,7 @@ class StartPuzzleView(discord.ui.View):
         except discord.Forbidden:
             await interaction.followup.send("I couldn't send you a DM. Please check your privacy settings to ensure you accept DMs from server members!", ephemeral=True)
 
-class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
+class Puzzle2Cog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cleanup_loop.start()
@@ -273,7 +273,7 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
     async def before_cleanup_loop(self):
         await self.bot.wait_until_ready()
 
-    @app_commands.command(name="setup", description="Configure the Sliding Puzzle feature.")
+    @app_commands.command(name="slider_setup", description="Configure the Sliding Puzzle feature.")
     @app_commands.describe(
         channel="The channel where puzzles will be posted",
         reward="Amount of Supercoins given to the solver"
@@ -301,7 +301,7 @@ class Puzzle2Cog(commands.GroupCog, group_name="puzzle2"):
             f"Successfully configured **Sliding Puzzles**!\nChannel: {channel.mention}\nReward: **{reward} {coin_name}**"
         )
 
-    @app_commands.command(name="submit", description="Submit an image to become a sliding puzzle.")
+    @app_commands.command(name="slider_submit", description="Submit an image to become a sliding puzzle.")
     @app_commands.describe(image="The image to turn into a puzzle")
     async def submit(self, interaction: discord.Interaction, image: discord.Attachment):
         if not self.bot.db_pool:

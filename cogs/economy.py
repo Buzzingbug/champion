@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-class EconomyCog(commands.GroupCog, group_name="economy"):
+class EconomyCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -43,7 +43,7 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             print(f"Error sending bank embed: {e}")
             await interaction.followup.send(f"Bank error: Your balance is **{balance:,} {coin_name}**.", ephemeral=True)
 
-    @app_commands.command(name="add", description="Add coins to a user's bank account.")
+    @app_commands.command(name="add_coins", description="Add coins to a user's bank account.")
     @app_commands.describe(user="The user to give coins to", amount="The amount of coins to give")
     @app_commands.checks.has_permissions(administrator=True)
     async def add(self, interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -74,7 +74,7 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
 
         await interaction.response.send_message(f"Successfully added **{amount:,} {coin_name}** to {user.mention}'s account!")
 
-    @app_commands.command(name="setname", description="Set the custom name for your server's currency.")
+    @app_commands.command(name="set_currency_name", description="Set the custom name for your server's currency.")
     @app_commands.describe(name="The new name for the currency (e.g., VibeCoins)")
     @app_commands.checks.has_permissions(administrator=True)
     async def setname(self, interaction: discord.Interaction, name: str):
@@ -97,7 +97,7 @@ class EconomyCog(commands.GroupCog, group_name="economy"):
             f"Successfully updated the server's currency name to **{name}**!\nAll minigames will now use this name."
         )
 
-    @app_commands.command(name="check", description="[ADMIN] Check a user's bank account balance.")
+    @app_commands.command(name="check_balance", description="[ADMIN] Check a user's bank account balance.")
     @app_commands.describe(user="The user to check the balance of")
     @app_commands.checks.has_permissions(administrator=True)
     async def check(self, interaction: discord.Interaction, user: discord.Member):

@@ -4,11 +4,11 @@ from discord.ext import commands
 import re
 import datetime
 
-class CategoryRewardsCog(commands.GroupCog, group_name="category"):
+class CategoryRewardsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup", description="Reward users with coins for posting media in a category.")
+    @app_commands.command(name="category_setup", description="Reward users with coins for posting media in a category.")
     @app_commands.describe(
         category="The category to enable rewards for",
         reward="Coins given per media post",
@@ -53,7 +53,7 @@ class CategoryRewardsCog(commands.GroupCog, group_name="category"):
             f"Limit Message: `{message}`"
         )
 
-    @app_commands.command(name="remove", description="Disable media rewards for a category.")
+    @app_commands.command(name="category_remove", description="Disable media rewards for a category.")
     @app_commands.describe(category="The category to remove rewards from")
     @app_commands.checks.has_permissions(administrator=True)
     async def remove(self, interaction: discord.Interaction, category: discord.CategoryChannel):
@@ -75,7 +75,7 @@ class CategoryRewardsCog(commands.GroupCog, group_name="category"):
         else:
             await interaction.response.send_message(f"Successfully disabled media rewards for the **{category.name}** category.", ephemeral=True)
 
-    @app_commands.command(name="config", description="View the media rewards configuration for categories.")
+    @app_commands.command(name="category_config", description="View the media rewards configuration for categories.")
     @app_commands.checks.has_permissions(administrator=True)
     async def config(self, interaction: discord.Interaction):
         guild_categories = [c for c in self.bot.cache['categories'].values() if c['guild_id'] == interaction.guild.id]
@@ -178,11 +178,11 @@ class CategoryRewardsCog(commands.GroupCog, group_name="category"):
                 message.guild.id, message.author.id, actual_reward
             )
 
-class ChannelRewardsCog(commands.GroupCog, group_name="channel_reward"):
+class ChannelRewardsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="setup", description="Reward users with coins for posting media in a specific channel.")
+    @app_commands.command(name="channel_setup", description="Reward users with coins for posting media in a specific channel.")
     @app_commands.describe(
         channel="The text channel to enable rewards for",
         reward="Coins given per media post",
@@ -227,7 +227,7 @@ class ChannelRewardsCog(commands.GroupCog, group_name="channel_reward"):
             f"Limit Message: `{message}`"
         )
 
-    @app_commands.command(name="remove", description="Disable media rewards for a specific channel.")
+    @app_commands.command(name="channel_remove", description="Disable media rewards for a specific channel.")
     @app_commands.describe(channel="The text channel to remove rewards from")
     @app_commands.checks.has_permissions(administrator=True)
     async def remove(self, interaction: discord.Interaction, channel: discord.TextChannel):
@@ -249,7 +249,7 @@ class ChannelRewardsCog(commands.GroupCog, group_name="channel_reward"):
         else:
             await interaction.response.send_message(f"Successfully disabled media rewards for {channel.mention}.", ephemeral=True)
 
-    @app_commands.command(name="config", description="View the media rewards configuration for text channels.")
+    @app_commands.command(name="channel_config", description="View the media rewards configuration for text channels.")
     @app_commands.checks.has_permissions(administrator=True)
     async def config(self, interaction: discord.Interaction):
         guild_channels = [c for c in self.bot.cache['channel_rewards'].values() if c['guild_id'] == interaction.guild.id]

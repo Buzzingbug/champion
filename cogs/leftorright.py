@@ -64,12 +64,12 @@ class LORView(discord.ui.View):
         await self.process_vote(interaction, "right")
 
 
-class LORCog(commands.GroupCog, group_name="leftorright"):
+class LORCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.add_view(LORView(self.bot))
 
-    @app_commands.command(name="setup", description="Configure the Left or Right feature for this server.")
+    @app_commands.command(name="lor_setup", description="Configure the Left or Right feature for this server.")
     @app_commands.describe(
         channel="The channel where Left or Right will be active",
         role="The role required to vote",
@@ -113,7 +113,7 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
             f"Custom Message: `{message}`"
         )
 
-    @app_commands.command(name="reset", description="Reset and disable the Left or Right feature for this server.")
+    @app_commands.command(name="lor_reset", description="Reset and disable the Left or Right feature for this server.")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset(self, interaction: discord.Interaction):
         if not self.bot.db_pool:
@@ -131,7 +131,7 @@ class LORCog(commands.GroupCog, group_name="leftorright"):
         else:
             await interaction.response.send_message("Successfully reset and disabled **Left or Right** for this server.", ephemeral=True)
 
-    @app_commands.command(name="submit", description="Submit two images for Left or Right.")
+    @app_commands.command(name="lor_submit", description="Submit two images for Left or Right.")
     @app_commands.describe(
         image_left="The image that will appear on the left",
         image_right="The image that will appear on the right",
