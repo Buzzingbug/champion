@@ -198,6 +198,11 @@ class GamesBot(commands.Bot):
             except asyncpg.exceptions.DuplicateColumnError:
                 pass
                 
+            try:
+                await connection.execute("ALTER TABLE active_puzzles ADD COLUMN image_data BYTEA;")
+            except asyncpg.exceptions.DuplicateColumnError:
+                pass
+                
             print("Database tables verified/created.")
 
     async def load_caches(self):

@@ -26,7 +26,7 @@ class PuzzleModal(discord.ui.Modal, title='Solve Puzzle'):
         async with self.db_pool.acquire() as connection:
             # Fetch the puzzle
             record = await connection.fetchrow(
-                "SELECT guild_id, correct_order FROM active_puzzles WHERE message_id = $1",
+                "SELECT guild_id, correct_order, image_data FROM active_puzzles WHERE message_id = $1",
                 self.message_id
             )
 
@@ -73,9 +73,15 @@ class PuzzleModal(discord.ui.Modal, title='Solve Puzzle'):
                     embed = msg.embeds[0]
                     embed.color = discord.Color.green()
                     embed.description = f"**Solved by {interaction.user.mention}!**\n\nThe correct sequence was: `{correct_order}`"
-                    await msg.edit(embed=embed, view=None)
-                except Exception:
-                    pass
+                    
+                    if record['image_data']:
+                        orig_file = discord.File(fp=io.BytesIO(record['image_data']), filename="solved.png")
+                        embed.set_image(url="attachment://solved.png")
+                        await msg.edit(embed=embed, view=None, attachments=[orig_file])
+                    else:
+                        await msg.edit(embed=embed, view=None)
+                except Exception as e:
+                    print(f"Error editing solved puzzle: {e}")
 
             else:
                 await interaction.response.send_message("Incorrect order! Try again.", ephemeral=True)
@@ -224,6 +230,10 @@ class PuzzleCog(commands.Cog):
             scrambled.save(final_buffer, format="PNG")
             final_buffer.seek(0)
             
+            orig_buffer = io.BytesIO()
+            img_resized.save(orig_buffer, format="PNG")
+            orig_bytes = orig_buffer.getvalue()
+            
             file = discord.File(fp=final_buffer, filename="scrambled.png")
             
             embed = discord.Embed(
@@ -240,8 +250,8 @@ class PuzzleCog(commands.Cog):
             # Save active puzzle
             async with self.bot.db_pool.acquire() as connection:
                 await connection.execute(
-                    "INSERT INTO active_puzzles (message_id, guild_id, correct_order) VALUES ($1, $2, $3)",
-                    msg.id, interaction.guild.id, "".join(correct_sequence)
+                    "INSERT INTO active_puzzles (message_id, guild_id, correct_order, image_data) VALUES ($1, $2, $3, $4)",
+                    msg.id, interaction.guild.id, "".join(correct_sequence), orig_bytes
                 )
                 
             await interaction.followup.send("Puzzle created successfully!")
