@@ -35,7 +35,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
         has_more = len(users) > limit
         users = users[:limit]
         
-    width = 1200
+    width = 1350
     height = 250 + (len(users) * 110) if users else 450
     
     # Base dark modern background
@@ -58,7 +58,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
 
     try:
         font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 60)
-        font_header = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 30)
+        font_header = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 28)
         font_main = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 40)
         font_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 42)
     except Exception as e:
@@ -81,10 +81,10 @@ async def generate_global_leaderboard_image(bot, guild, page):
     cols = {
         "Rank": 40,
         "User": 200,
-        "Channels": 520,
-        "Categories": 750,
-        "Games": 1000,
-        f"Total {coin_name}": 1160 # right aligned
+        "Channels": 580,
+        "Categories": 820,
+        "Games": 1060,
+        "Total": 1310 # right aligned
     }
     
     y = 160
@@ -94,9 +94,9 @@ async def generate_global_leaderboard_image(bot, guild, page):
     draw.text((cols["Categories"], y), "CATEGORIES", fill=(220, 220, 220), font=font_header)
     draw.text((cols["Games"], y), "GAMES", fill=(220, 220, 220), font=font_header)
     
-    total_txt = f"TOTAL {coin_name}"
+    total_txt = "TOTAL"
     bbox = draw.textbbox((0,0), total_txt, font=font_header)
-    draw.text((cols[f"Total {coin_name}"] - (bbox[2] - bbox[0]), y), total_txt, fill=(251, 236, 144), font=font_header)
+    draw.text((cols["Total"] - (bbox[2] - bbox[0]), y), total_txt, fill=(251, 236, 144), font=font_header)
     
     draw.line([(40, y + 50), (width - 40, y + 50)], fill=(255, 255, 255, 100), width=2)
     
@@ -150,7 +150,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
                 # Total
                 total_val = f"{u['supercoins']:,}"
                 bbox = draw.textbbox((0,0), total_val, font=font_bold)
-                draw.text((cols[f"Total {coin_name}"] - (bbox[2] - bbox[0]), y_offset + 20), total_val, fill=color, font=font_bold)
+                draw.text((cols["Total"] - (bbox[2] - bbox[0]), y_offset + 20), total_val, fill=color, font=font_bold)
                 
                 # Line
                 if i < offset + len(users):
