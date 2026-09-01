@@ -57,11 +57,12 @@ async def generate_global_leaderboard_image(bot, guild, page):
     draw = ImageDraw.Draw(img)
 
     try:
-        font_title = ImageFont.truetype("arialbd.ttf", 60)
-        font_header = ImageFont.truetype("arialbd.ttf", 30)
-        font_main = ImageFont.truetype("arial.ttf", 40)
-        font_bold = ImageFont.truetype("arialbd.ttf", 42)
-    except:
+        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 60)
+        font_header = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 30)
+        font_main = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 40)
+        font_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 42)
+    except Exception as e:
+        print(f"Failed to load fonts: {e}")
         font_title = font_header = font_main = font_bold = ImageFont.load_default()
 
     # Bot Avatar
