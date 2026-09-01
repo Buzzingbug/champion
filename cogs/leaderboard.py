@@ -158,7 +158,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
 
 class LeaderboardView(discord.ui.View):
     def __init__(self, bot, guild, page=1):
-        super().__init__(timeout=180)
+        super().__init__(timeout=600)
         self.bot = bot
         self.guild = guild
         self.page = page
