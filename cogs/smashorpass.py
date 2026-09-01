@@ -171,16 +171,21 @@ class SmashOrPassCog(commands.Cog):
                     interaction.guild.id, interaction.user.id, config['post_cost']
                 )
 
-        file = await image.to_file()
-        embed = discord.Embed(
-            description=f"**Submitted by {interaction.user.mention}**",
-            color=discord.Color.purple()
-        )
-        embed.set_image(url=f"attachment://{file.filename}")
-
-        view = SmashOrPassView(self.bot)
-
         try:
+            file = await image.to_file()
+            # Force simple filename to fix Discord double-image bug
+            ext = file.filename.split('.')[-1]
+            file.filename = f"image.{ext}"
+            
+            embed = discord.Embed(
+                title="Smash or Pass?",
+                description=f"**Submitted by {interaction.user.mention}**",
+                color=discord.Color.purple()
+            )
+            embed.set_image(url=f"attachment://image.{ext}")
+            
+            view = SmashOrPassView(self.bot)
+            
             await interaction.channel.send(embed=embed, file=file, view=view)
             await interaction.followup.send("Successfully submitted!")
         except Exception as e:
@@ -222,22 +227,24 @@ class SmashOrPassCog(commands.Cog):
                 )
 
         # Prepare to repost
-        files = []
-        for att in message.attachments:
-            files.append(await att.to_file())
-
         embed = discord.Embed(
             description=f"**Submitted by {message.author.mention}**\n\n{message.content}",
             color=discord.Color.purple()
         )
         
-        # If there's an image, attach it to the embed for better display
+        files = []
         image_attached = False
-        for f in files:
-            if f.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                embed.set_image(url=f"attachment://{f.filename}")
+        for i, att in enumerate(message.attachments):
+            file = await att.to_file()
+            if not image_attached and file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                ext = file.filename.split('.')[-1]
+                file.filename = f"image.{ext}"
+                embed.set_image(url=f"attachment://image.{ext}")
                 image_attached = True
-                break
+            elif image_attached:
+                ext = file.filename.split('.')[-1]
+                file.filename = f"extra_{i}.{ext}"
+            files.append(file)
 
         view = SmashOrPassView(self.bot)
 
