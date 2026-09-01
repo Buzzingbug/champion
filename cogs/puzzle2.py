@@ -45,6 +45,17 @@ class SlidingPuzzleView(discord.ui.View):
         buffer.seek(0)
         return discord.File(fp=buffer, filename="puzzle.jpg")
 
+    def generate_solved_image(self):
+        img = Image.new("RGB", (600, 600))
+        for i in range(9):
+            row = i // 3
+            col = i % 3
+            img.paste(self.pieces[i], (col * 200, row * 200))
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG")
+        buffer.seek(0)
+        return discord.File(fp=buffer, filename="solved.jpg")
+
     async def move_empty(self, interaction: discord.Interaction, new_empty_idx: int):
         # Swap the piece at new_empty_idx with the empty_idx
         self.board[self.empty_idx], self.board[new_empty_idx] = self.board[new_empty_idx], self.board[self.empty_idx]
@@ -93,11 +104,15 @@ class SlidingPuzzleView(discord.ui.View):
                 embed = msg.embeds[0]
                 embed.color = discord.Color.green()
                 embed.description = f"**Solved by {interaction.user.mention}!**\nThey earned **{self.reward} {self.coin_name}**."
-                await msg.edit(embed=embed, view=None)
+                
+                solved_file = self.generate_solved_image()
+                embed.set_image(url="attachment://solved.jpg")
+                await msg.edit(embed=embed, view=None, attachments=[solved_file])
             except Exception as e:
                 print(f"Failed to edit original msg: {e}")
                 
-            final_file = self.generate_image()
+            # Solved message in DMs
+            final_file = self.generate_solved_image()
             await interaction.response.edit_message(
                 content=f"🎉 **Congratulations!** You solved the puzzle and earned {self.reward} {self.coin_name}!\n[View Original Message]({self.original_msg_jump_url})",
                 attachments=[final_file],
@@ -344,24 +359,46 @@ class Puzzle2Cog(commands.Cog):
             img_square = img.crop((left, top, right, bottom))
             img_resized = img_square.resize((600, 600))
             
-            # Save compressed JPEG to db
+            # Save original compressed JPEG to db
             compressed_buffer = io.BytesIO()
             img_resized.save(compressed_buffer, format="JPEG", quality=85)
             compressed_bytes = compressed_buffer.getvalue()
             
-            # We want to show the full image in the embed, so we save it temporarily to post
-            compressed_buffer.seek(0)
-            file = discord.File(fp=compressed_buffer, filename="puzzle_full.jpg")
+            # Create a scrambled thumbnail for the channel
+            pieces = []
+            for row in range(3):
+                for col in range(3):
+                    box = (col * 200, row * 200, (col + 1) * 200, (row + 1) * 200)
+                    pieces.append(img_resized.crop(box))
+            
+            thumb_indices = list(range(9))
+            random.shuffle(thumb_indices)
+            
+            scrambled_thumb = Image.new("RGB", (600, 600), "black")
+            for i in range(9):
+                if thumb_indices[i] == 8: # keep one black square
+                    continue
+                row = i // 3
+                col = i % 3
+                scrambled_thumb.paste(pieces[thumb_indices[i]], (col * 200, row * 200))
+                
+            draw = ImageDraw.Draw(scrambled_thumb)
+            for x in [200, 400]:
+                draw.line([(x, 0), (x, 600)], fill="white", width=2)
+            for y in [200, 400]:
+                draw.line([(0, y), (600, y)], fill="white", width=2)
+                
+            thumb_buffer = io.BytesIO()
+            scrambled_thumb.save(thumb_buffer, format="JPEG", quality=85)
+            thumb_buffer.seek(0)
+            file = discord.File(fp=thumb_buffer, filename="scrambled.jpg")
             
             embed = discord.Embed(
                 title="🧩 Sliding Puzzle",
-                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to play privately! Slide the pieces to recreate this original image and earn **{config['reward_amount']} {coin_name}**.",
+                description=f"**Submitted by {interaction.user.mention}**\n\nClick the button below to play privately! Slide the pieces to recreate the original image and earn **{config['reward_amount']} {coin_name}**.",
                 color=discord.Color.purple()
             )
-            embed.set_image(url="attachment://puzzle_full.jpg")
-            
-            # We can't attach a view with dynamic state if it persists across restarts easily unless we pass message_id
-            # Wait, `StartPuzzleView` takes message_id
+            embed.set_image(url="attachment://scrambled.jpg")
             
             msg = await interaction.channel.send(embed=embed, file=file)
             
