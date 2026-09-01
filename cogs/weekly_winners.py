@@ -263,6 +263,7 @@ class WeeklyWinnersCog(commands.Cog):
 
         # Close all active submissions from before this winner was announced
         try:
+            import asyncio
             async for old_msg in game_channel.history(limit=2000):
                 if old_msg.author == self.bot.user and old_msg.components:
                     old_embed = old_msg.embeds[0] if old_msg.embeds else None
@@ -272,6 +273,8 @@ class WeeklyWinnersCog(commands.Cog):
                             old_embed.description += "\n\n🔒 **Weekly Voting Closed!**"
                     try:
                         await old_msg.edit(embed=old_embed, view=None)
+                        # Add a small delay to prevent hitting Discord's rate limit (429 Too Many Requests)
+                        await asyncio.sleep(1.5)
                     except Exception:
                         pass
         except discord.Forbidden:
