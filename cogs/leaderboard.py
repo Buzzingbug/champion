@@ -57,7 +57,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
     draw = ImageDraw.Draw(img)
 
     try:
-        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 60)
+        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 65)
         font_header = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 28)
         font_main = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 40)
         font_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 42)
@@ -65,17 +65,22 @@ async def generate_global_leaderboard_image(bot, guild, page):
         print(f"Failed to load fonts: {e}")
         font_title = font_header = font_main = font_bold = ImageFont.load_default()
 
-    # Bot Avatar
+    # Center Title and Avatar
+    title_text = "ECONOMY LEADERBOARD"
+    bbox = draw.textbbox((0,0), title_text, font=font_title)
+    title_w = bbox[2] - bbox[0]
+    total_header_w = 90 + 20 + title_w
+    start_x = (width - total_header_w) // 2
+
     async with aiohttp.ClientSession() as session:
         bot_av = await fetch_avatar(bot.user, session)
     bot_av = bot_av.resize((90, 90))
     mask = Image.new("L", (90, 90), 0)
     draw_mask = ImageDraw.Draw(mask)
     draw_mask.ellipse((0, 0, 90, 90), fill=255)
-    img.paste(bot_av, (40, 40), mask)
+    img.paste(bot_av, (start_x, 40), mask)
 
-    # Title
-    draw.text((150, 60), "ECONOMY LEADERBOARD", fill=(255, 255, 255), font=font_title)
+    draw.text((start_x + 110, 50), title_text, fill=(251, 236, 144), font=font_title)
     
     # Draw Columns
     cols = {
@@ -88,7 +93,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
     }
     
     y = 160
-    draw.text((cols["Rank"], y), "RNK", fill=(220, 220, 220), font=font_header)
+    draw.text((cols["Rank"], y), "RANK", fill=(220, 220, 220), font=font_header)
     draw.text((cols["User"], y), "NAME", fill=(220, 220, 220), font=font_header)
     draw.text((cols["Channels"], y), "CHANNELS", fill=(220, 220, 220), font=font_header)
     draw.text((cols["Categories"], y), "CATEGORIES", fill=(220, 220, 220), font=font_header)
@@ -111,7 +116,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
                 if i == 1: color = (251, 236, 144) # Gold
                 elif i == 2: color = (189, 195, 199) # Silver
                 elif i == 3: color = (205, 127, 50) # Bronze
-                else: color = (255, 255, 255)
+                else: color = (220, 220, 220)
 
                 # Fetch user
                 member = guild.get_member(u['user_id'])
@@ -128,7 +133,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
                         avatar_img = await fetch_avatar(bot.user, session) # fallback
                 
                 # Rank
-                draw.text((cols["Rank"], y_offset + 20), f"#{i}", fill=color, font=font_bold)
+                draw.text((cols["Rank"] + 10, y_offset + 20), f"{i}", fill=color, font=font_bold)
                 
                 # Avatar
                 avatar_img = avatar_img.resize((70, 70))
@@ -142,10 +147,11 @@ async def generate_global_leaderboard_image(bot, guild, page):
                 name_disp = name[:10] + "..." if len(name) > 10 else name
                 draw.text((cols["User"], y_offset + 20), name_disp, fill=(255, 255, 255), font=font_bold)
                 
-                # Stats
-                draw.text((cols["Channels"], y_offset + 20), f"{u['lifetime_channel'] or 0:,}", fill=(255, 255, 255), font=font_main)
-                draw.text((cols["Categories"], y_offset + 20), f"{u['lifetime_category'] or 0:,}", fill=(255, 255, 255), font=font_main)
-                draw.text((cols["Games"], y_offset + 20), f"{u['lifetime_games'] or 0:,}", fill=(255, 255, 255), font=font_main)
+                # Stats (Softer color to let names pop)
+                stat_color = (200, 210, 220)
+                draw.text((cols["Channels"], y_offset + 20), f"{u['lifetime_channel'] or 0:,}", fill=stat_color, font=font_main)
+                draw.text((cols["Categories"], y_offset + 20), f"{u['lifetime_category'] or 0:,}", fill=stat_color, font=font_main)
+                draw.text((cols["Games"], y_offset + 20), f"{u['lifetime_games'] or 0:,}", fill=stat_color, font=font_main)
                 
                 # Total
                 total_val = f"{u['supercoins']:,}"
