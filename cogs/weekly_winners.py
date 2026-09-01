@@ -271,8 +271,11 @@ class WeeklyWinnersCog(commands.Cog):
                         old_embed.color = discord.Color.dark_gray()
                         if old_embed.description and "🔒" not in old_embed.description:
                             old_embed.description += "\n\n🔒 **Weekly Voting Closed!**"
+                        # Remove the image from the embed
+                        old_embed.set_image(url=None)
                     try:
-                        await old_msg.edit(embed=old_embed, view=None)
+                        # Clear all attachments to completely remove the image from chat
+                        await old_msg.edit(embed=old_embed, view=None, attachments=[])
                         # Add a small delay to prevent hitting Discord's rate limit (429 Too Many Requests)
                         await asyncio.sleep(1.5)
                     except Exception:
