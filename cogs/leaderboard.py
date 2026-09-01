@@ -4,6 +4,7 @@ from discord.ext import commands
 import io
 import os
 import aiohttp
+import asyncio
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Image.Image:
@@ -38,22 +39,13 @@ async def generate_global_leaderboard_image(bot, guild, page):
     width = 1350
     height = 250 + (len(users) * 110) if users else 450
     
-    # Base dark modern background
-    base = Image.new('RGBA', (width, height), (15, 15, 18, 255))
+    # Load pre-rendered background to save CPU
+    try:
+        bg = Image.open("assets/leaderboard_bg.png").convert("RGBA")
+        img = bg.crop((0, 0, width, height))
+    except:
+        img = Image.new('RGBA', (width, height), (15, 15, 18, 255))
 
-    # Draw glowing blobs
-    blobs = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    blob_draw = ImageDraw.Draw(blobs)
-    blob_draw.ellipse((-100, -100, 600, 600), fill=(251, 236, 144, 180)) # fbec90 top left
-    blob_draw.ellipse((width-600, height-600, width+100, height+100), fill=(202, 103, 92, 160)) # ca675c bottom right
-    blobs = blobs.filter(ImageFilter.GaussianBlur(120))
-    img = Image.alpha_composite(base, blobs)
-
-    # Draw Glass Card
-    glass = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    glass_draw = ImageDraw.Draw(glass)
-    glass_draw.rounded_rectangle([(20, 20), (width - 20, height - 20)], radius=30, fill=(255, 255, 255, 15), outline=(255, 255, 255, 60), width=2)
-    img = Image.alpha_composite(img, glass)
     draw = ImageDraw.Draw(img)
 
     try:
@@ -111,26 +103,30 @@ async def generate_global_leaderboard_image(bot, guild, page):
         draw.text((40, y_offset + 30), "No users found in the economy yet.", fill=(255, 255, 255), font=font_main)
     else:
         async with aiohttp.ClientSession() as session:
-            for i, u in enumerate(users, start=offset + 1):
+            async def get_user_data(u):
+                member = guild.get_member(u['user_id'])
+                if member:
+                    name = member.display_name
+                    av = await fetch_avatar(member, session)
+                else:
+                    try:
+                        user_obj = await bot.fetch_user(u['user_id'])
+                        name = user_obj.name
+                        av = await fetch_avatar(user_obj, session)
+                    except:
+                        name = f"Unknown ({u['user_id']})"
+                        av = await fetch_avatar(bot.user, session) # fallback
+                return name, av
+
+            tasks = [get_user_data(u) for u in users]
+            user_results = await asyncio.gather(*tasks)
+
+            for i, (u, (name, avatar_img)) in enumerate(zip(users, user_results), start=offset + 1):
                 # Colors
                 if i == 1: color = (251, 236, 144) # Gold
                 elif i == 2: color = (189, 195, 199) # Silver
                 elif i == 3: color = (205, 127, 50) # Bronze
                 else: color = (220, 220, 220)
-
-                # Fetch user
-                member = guild.get_member(u['user_id'])
-                if member:
-                    name = member.display_name
-                    avatar_img = await fetch_avatar(member, session)
-                else:
-                    try:
-                        user_obj = await bot.fetch_user(u['user_id'])
-                        name = user_obj.name
-                        avatar_img = await fetch_avatar(user_obj, session)
-                    except:
-                        name = f"Unknown ({u['user_id']})"
-                        avatar_img = await fetch_avatar(bot.user, session) # fallback
                 
                 # Rank
                 draw.text((cols["Rank"] + 10, y_offset + 20), f"{i}", fill=color, font=font_bold)
