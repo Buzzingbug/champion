@@ -261,5 +261,21 @@ class WeeklyWinnersCog(commands.Cog):
         except Exception as e:
             print(f"Failed to post winner to dashboard: {e}")
 
+        # Close all active submissions from before this winner was announced
+        try:
+            async for old_msg in game_channel.history(limit=2000):
+                if old_msg.author == self.bot.user and old_msg.components:
+                    old_embed = old_msg.embeds[0] if old_msg.embeds else None
+                    if old_embed:
+                        old_embed.color = discord.Color.dark_gray()
+                        if old_embed.description and "🔒" not in old_embed.description:
+                            old_embed.description += "\n\n🔒 **Weekly Voting Closed!**"
+                    try:
+                        await old_msg.edit(embed=old_embed, view=None)
+                    except Exception:
+                        pass
+        except discord.Forbidden:
+            print("Missing permissions to fetch history or edit messages in game channel.")
+
 async def setup(bot):
     await bot.add_cog(WeeklyWinnersCog(bot))
