@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+import asyncio
 
 class EconomyCog(commands.Cog):
     def __init__(self, bot):
@@ -36,9 +37,19 @@ class EconomyCog(commands.Cog):
             )
             embed.add_field(name="Current Balance", value=f"**{balance:,} {coin_name}**", inline=False)
             embed.set_image(url="attachment://aurum_bank.jpg")
-            embed.set_footer(text="Secured by Botforge services")
+            embed.set_footer(text="Secured by Botforge services | Auto-deleting in 20s...")
 
             await interaction.followup.send(file=file, embed=embed, ephemeral=False)
+            
+            async def delete_later():
+                await asyncio.sleep(20)
+                try:
+                    await interaction.delete_original_response()
+                except:
+                    pass
+            
+            self.bot.loop.create_task(delete_later())
+            
         except Exception as e:
             print(f"Error sending bank embed: {e}")
             await interaction.followup.send(f"Bank error: Your balance is **{balance:,} {coin_name}**.", ephemeral=False)
