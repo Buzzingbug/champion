@@ -151,6 +151,13 @@ class SlidingPuzzleView(discord.ui.View):
         else:
             await interaction.response.defer()
 
+    @discord.ui.button(emoji="🗑️", label="Delete", style=discord.ButtonStyle.danger, row=2)
+    async def delete_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.message.delete()
+        except discord.HTTPException:
+            await interaction.response.send_message("Failed to delete the message.", ephemeral=True)
+
 class StartPuzzleView(discord.ui.View):
     def __init__(self, db_pool):
         super().__init__(timeout=None)

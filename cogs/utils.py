@@ -59,5 +59,31 @@ class UtilsCog(commands.Cog):
         
         await interaction.followup.send(embed=embed)
 
+    @app_commands.command(name="clear_dms", description="Deletes all messages the bot has sent you in DMs.")
+    async def clear_dms(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            channel = interaction.user.dm_channel
+            if not channel:
+                channel = await interaction.user.create_dm()
+                
+            deleted = 0
+            # Discord limits bots to deleting their own messages
+            async for msg in channel.history(limit=100):
+                if msg.author.id == self.bot.user.id:
+                    try:
+                        await msg.delete()
+                        deleted += 1
+                    except discord.HTTPException:
+                        pass
+                        
+            await interaction.followup.send(f"✅ Successfully cleaned up {deleted} messages from your DMs!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.followup.send("I don't have permission to message you in DMs.", ephemeral=True)
+        except Exception as e:
+            print(f"Error clearing DMs: {e}")
+            await interaction.followup.send("An error occurred while trying to clear DMs.", ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(UtilsCog(bot))
