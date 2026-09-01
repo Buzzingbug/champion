@@ -49,7 +49,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
     draw = ImageDraw.Draw(img)
 
     try:
-        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 65)
+        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 85)
         font_header = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 28)
         font_main = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 40)
         font_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 42)
@@ -57,22 +57,13 @@ async def generate_global_leaderboard_image(bot, guild, page):
         print(f"Failed to load fonts: {e}")
         font_title = font_header = font_main = font_bold = ImageFont.load_default()
 
-    # Center Title and Avatar
+    # Center Title
     title_text = "ECONOMY LEADERBOARD"
     bbox = draw.textbbox((0,0), title_text, font=font_title)
     title_w = bbox[2] - bbox[0]
-    total_header_w = 90 + 20 + title_w
-    start_x = (width - total_header_w) // 2
+    start_x = (width - title_w) // 2
 
-    async with aiohttp.ClientSession() as session:
-        bot_av = await fetch_avatar(bot.user, session)
-    bot_av = bot_av.resize((90, 90))
-    mask = Image.new("L", (90, 90), 0)
-    draw_mask = ImageDraw.Draw(mask)
-    draw_mask.ellipse((0, 0, 90, 90), fill=255)
-    img.paste(bot_av, (start_x, 40), mask)
-
-    draw.text((start_x + 110, 50), title_text, fill=(251, 236, 144), font=font_title)
+    draw.text((start_x, 40), title_text, fill=(255, 255, 255), font=font_title)
     
     # Draw Columns
     cols = {
