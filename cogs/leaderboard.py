@@ -4,21 +4,20 @@ from discord.ext import commands
 import io
 import os
 import aiohttp
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Image.Image:
     try:
         if user.display_avatar:
-            async with session.get(str(user.display_avatar.replace(size=128, format="png"))) as resp:
+            async with session.get(str(user.display_avatar.replace(size=256, format="png"))) as resp:
                 if resp.status == 200:
                     data = await resp.read()
                     return Image.open(io.BytesIO(data)).convert("RGBA")
     except:
         pass
-    # Fallback to gray circle
-    img = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.ellipse((0, 0, 128, 128), fill=(100, 100, 100, 255))
+    draw.ellipse((0, 0, 256, 256), fill=(100, 100, 100, 255))
     return img
 
 async def generate_global_leaderboard_image(bot, guild, page):
@@ -36,55 +35,74 @@ async def generate_global_leaderboard_image(bot, guild, page):
         has_more = len(users) > limit
         users = users[:limit]
         
-    width = 1000
-    height = 200 + (len(users) * 90) if users else 400
+    width = 1600
+    height = 350 + (len(users) * 130) if users else 500
     
-    # Solid background with a sleek inner panel
-    img = Image.new('RGBA', (width, height), color=(20, 20, 24, 255))
-    overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    draw_overlay = ImageDraw.Draw(overlay)
-    draw_overlay.rectangle([(15, 15), (width - 15, height - 15)], fill=(30, 30, 35, 255), outline=(241, 196, 15, 255), width=3)
-    img = Image.alpha_composite(img, overlay)
+    # Base dark modern background
+    base = Image.new('RGBA', (width, height), (15, 20, 35, 255))
+
+    # Draw glowing blobs
+    blobs = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    blob_draw = ImageDraw.Draw(blobs)
+    blob_draw.ellipse((-200, -200, 800, 800), fill=(0, 200, 255, 80)) # Cyan
+    blob_draw.ellipse((width-800, height-800, width+200, height+200), fill=(180, 0, 255, 60)) # Purple
+    blobs = blobs.filter(ImageFilter.GaussianBlur(150))
+    img = Image.alpha_composite(base, blobs)
+
+    # Draw Glass Card
+    glass = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    glass_draw = ImageDraw.Draw(glass)
+    glass_draw.rounded_rectangle([(40, 40), (width - 40, height - 40)], radius=30, fill=(255, 255, 255, 12), outline=(255, 255, 255, 50), width=2)
+    img = Image.alpha_composite(img, glass)
     draw = ImageDraw.Draw(img)
 
     try:
-        font_title = ImageFont.truetype("arial.ttf", 46)
-        font_header = ImageFont.truetype("arial.ttf", 26)
-        font_main = ImageFont.truetype("arial.ttf", 32)
-        font_bold = ImageFont.truetype("arialbd.ttf", 34)
+        font_title = ImageFont.truetype("arial.ttf", 60)
+        font_header = ImageFont.truetype("arial.ttf", 36)
+        font_main = ImageFont.truetype("arial.ttf", 44)
+        font_bold = ImageFont.truetype("arialbd.ttf", 46)
     except:
         font_title = font_header = font_main = font_bold = ImageFont.load_default()
 
-    # Draw Title
-    draw.text((40, 40), "🏆 ECONOMY LEADERBOARD", fill=(241, 196, 15), font=font_title)
+    # Bot Avatar
+    async with aiohttp.ClientSession() as session:
+        bot_av = await fetch_avatar(bot.user, session)
+    bot_av = bot_av.resize((80, 80))
+    mask = Image.new("L", (80, 80), 0)
+    draw_mask = ImageDraw.Draw(mask)
+    draw_mask.ellipse((0, 0, 80, 80), fill=255)
+    img.paste(bot_av, (80, 70), mask)
+
+    # Title
+    draw.text((190, 80), "ECONOMY LEADERBOARD", fill=(255, 255, 255), font=font_title)
     
     # Draw Columns
     cols = {
-        "Rank": 40,
-        "User": 190,
-        "Chat": 500,
-        "Posts": 650,
-        "Games": 800,
-        f"Total": 960 # right aligned
+        "Rank": 80,
+        "User": 280,
+        "Channels": 750,
+        "Categories": 1000,
+        "Games": 1250,
+        f"Total {coin_name}": 1500 # right aligned
     }
     
-    y = 120
-    draw.text((cols["Rank"], y), "RANK", fill=(150, 150, 150), font=font_header)
-    draw.text((cols["User"], y), "NAME", fill=(150, 150, 150), font=font_header)
-    draw.text((cols["Chat"], y), "CHAT", fill=(150, 150, 150), font=font_header)
-    draw.text((cols["Posts"], y), "MEDIA", fill=(150, 150, 150), font=font_header)
-    draw.text((cols["Games"], y), "GAMES", fill=(150, 150, 150), font=font_header)
+    y = 200
+    draw.text((cols["Rank"], y), "RANK", fill=(180, 190, 210), font=font_header)
+    draw.text((cols["User"], y), "NAME", fill=(180, 190, 210), font=font_header)
+    draw.text((cols["Channels"], y), "CHANNELS", fill=(180, 190, 210), font=font_header)
+    draw.text((cols["Categories"], y), "CATEGORIES", fill=(180, 190, 210), font=font_header)
+    draw.text((cols["Games"], y), "GAMES", fill=(180, 190, 210), font=font_header)
     
-    total_txt = f"TOTAL"
+    total_txt = f"TOTAL {coin_name}"
     bbox = draw.textbbox((0,0), total_txt, font=font_header)
-    draw.text((cols["Total"] - (bbox[2] - bbox[0]), y), total_txt, fill=(241, 196, 15), font=font_header)
+    draw.text((cols[f"Total {coin_name}"] - (bbox[2] - bbox[0]), y), total_txt, fill=(241, 196, 15), font=font_header)
     
-    draw.line([(40, y + 45), (width - 40, y + 45)], fill=(241, 196, 15, 150), width=2)
+    draw.line([(80, y + 60), (width - 80, y + 60)], fill=(255, 255, 255, 80), width=2)
     
-    y_offset = y + 70
+    y_offset = y + 90
     
     if not users:
-        draw.text((40, y_offset), "No users found in the economy yet.", fill=(200, 200, 200), font=font_main)
+        draw.text((80, y_offset + 30), "No users found in the economy yet.", fill=(200, 200, 200), font=font_main)
     else:
         async with aiohttp.ClientSession() as session:
             for i, u in enumerate(users, start=offset + 1):
@@ -92,7 +110,7 @@ async def generate_global_leaderboard_image(bot, guild, page):
                 if i == 1: color = (241, 196, 15) # Gold
                 elif i == 2: color = (189, 195, 199) # Silver
                 elif i == 3: color = (205, 127, 50) # Bronze
-                else: color = (200, 200, 200)
+                else: color = (255, 255, 255)
 
                 # Fetch user
                 member = guild.get_member(u['user_id'])
@@ -109,35 +127,35 @@ async def generate_global_leaderboard_image(bot, guild, page):
                         avatar_img = await fetch_avatar(bot.user, session) # fallback
                 
                 # Rank
-                draw.text((cols["Rank"], y_offset + 15), f"#{i}", fill=color, font=font_bold)
+                draw.text((cols["Rank"], y_offset + 25), f"#{i}", fill=color, font=font_bold)
                 
                 # Avatar
-                avatar_img = avatar_img.resize((60, 60))
+                avatar_img = avatar_img.resize((80, 80))
                 # Circular mask
-                mask = Image.new("L", (60, 60), 0)
+                mask = Image.new("L", (80, 80), 0)
                 draw_mask = ImageDraw.Draw(mask)
-                draw_mask.ellipse((0, 0, 60, 60), fill=255)
-                img.paste(avatar_img, (110, y_offset), mask)
+                draw_mask.ellipse((0, 0, 80, 80), fill=255)
+                img.paste(avatar_img, (160, y_offset + 10), mask)
                 
                 # Name
                 name_disp = name[:12] + "..." if len(name) > 12 else name
-                draw.text((cols["User"], y_offset + 15), name_disp, fill=(255, 255, 255), font=font_bold)
+                draw.text((cols["User"], y_offset + 25), name_disp, fill=(255, 255, 255), font=font_bold)
                 
                 # Stats
-                draw.text((cols["Chat"], y_offset + 15), f"{u['lifetime_channel'] or 0:,}", fill=(200, 200, 200), font=font_main)
-                draw.text((cols["Posts"], y_offset + 15), f"{u['lifetime_category'] or 0:,}", fill=(200, 200, 200), font=font_main)
-                draw.text((cols["Games"], y_offset + 15), f"{u['lifetime_games'] or 0:,}", fill=(200, 200, 200), font=font_main)
+                draw.text((cols["Channels"], y_offset + 25), f"{u['lifetime_channel'] or 0:,}", fill=(220, 230, 255), font=font_main)
+                draw.text((cols["Categories"], y_offset + 25), f"{u['lifetime_category'] or 0:,}", fill=(220, 230, 255), font=font_main)
+                draw.text((cols["Games"], y_offset + 25), f"{u['lifetime_games'] or 0:,}", fill=(220, 230, 255), font=font_main)
                 
                 # Total
-                total_val = f"{u['supercoins']:,} {coin_name}"
+                total_val = f"{u['supercoins']:,}"
                 bbox = draw.textbbox((0,0), total_val, font=font_bold)
-                draw.text((cols["Total"] - (bbox[2] - bbox[0]), y_offset + 15), total_val, fill=color, font=font_bold)
+                draw.text((cols[f"Total {coin_name}"] - (bbox[2] - bbox[0]), y_offset + 25), total_val, fill=color, font=font_bold)
                 
                 # Line
                 if i < offset + len(users):
-                    draw.line([(40, y_offset + 80), (width - 40, y_offset + 80)], fill=(255, 255, 255, 40), width=1)
+                    draw.line([(80, y_offset + 120), (width - 80, y_offset + 120)], fill=(255, 255, 255, 20), width=1)
                 
-                y_offset += 90
+                y_offset += 130
 
     final_buffer = io.BytesIO()
     img.convert('RGB').save(final_buffer, format="PNG")
