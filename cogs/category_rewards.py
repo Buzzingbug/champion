@@ -170,10 +170,10 @@ class CategoryRewardsCog(commands.Cog):
             # Add to main economy
             await connection.execute(
                 """
-                INSERT INTO economy (guild_id, user_id, supercoins) 
-                VALUES ($1, $2, $3)
+                INSERT INTO economy (guild_id, user_id, supercoins, lifetime_category) 
+                VALUES ($1, $2, $3, $3)
                 ON CONFLICT (guild_id, user_id) 
-                DO UPDATE SET supercoins = economy.supercoins + $3
+                DO UPDATE SET supercoins = economy.supercoins + $3, lifetime_category = economy.lifetime_category + $3
                 """,
                 message.guild.id, message.author.id, actual_reward
             )
@@ -340,10 +340,10 @@ class ChannelRewardsCog(commands.Cog):
             # Add to main economy
             await connection.execute(
                 """
-                INSERT INTO economy (guild_id, user_id, supercoins) 
-                VALUES ($1, $2, $3)
+                INSERT INTO economy (guild_id, user_id, supercoins, lifetime_channel) 
+                VALUES ($1, $2, $3, $3)
                 ON CONFLICT (guild_id, user_id) 
-                DO UPDATE SET supercoins = economy.supercoins + $3
+                DO UPDATE SET supercoins = economy.supercoins + $3, lifetime_channel = economy.lifetime_channel + $3
                 """,
                 message.guild.id, message.author.id, actual_reward
             )

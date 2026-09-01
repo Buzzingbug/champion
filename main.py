@@ -124,8 +124,31 @@ class GamesBot(commands.Bot):
                     guild_id BIGINT,
                     user_id BIGINT,
                     supercoins BIGINT DEFAULT 0,
+                    lifetime_channel BIGINT DEFAULT 0,
+                    lifetime_category BIGINT DEFAULT 0,
+                    lifetime_games BIGINT DEFAULT 0,
                     PRIMARY KEY (guild_id, user_id)
                 );
+
+                -- Migration for existing economy table
+                DO $$ 
+                BEGIN
+                    BEGIN
+                        ALTER TABLE economy ADD COLUMN lifetime_channel BIGINT DEFAULT 0;
+                    EXCEPTION
+                        WHEN duplicate_column THEN NULL;
+                    END;
+                    BEGIN
+                        ALTER TABLE economy ADD COLUMN lifetime_category BIGINT DEFAULT 0;
+                    EXCEPTION
+                        WHEN duplicate_column THEN NULL;
+                    END;
+                    BEGIN
+                        ALTER TABLE economy ADD COLUMN lifetime_games BIGINT DEFAULT 0;
+                    EXCEPTION
+                        WHEN duplicate_column THEN NULL;
+                    END;
+                END $$;
 
                 CREATE TABLE IF NOT EXISTS category_configs (
                     category_id BIGINT PRIMARY KEY,

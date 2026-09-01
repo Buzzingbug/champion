@@ -44,10 +44,10 @@ class LORView(discord.ui.View):
             # Give Supercoins
             await connection.execute(
                 """
-                INSERT INTO economy (guild_id, user_id, supercoins) 
-                VALUES ($1, $2, $3)
+                INSERT INTO economy (guild_id, user_id, supercoins, lifetime_games) 
+                VALUES ($1, $2, $3, $3)
                 ON CONFLICT (guild_id, user_id) 
-                DO UPDATE SET supercoins = economy.supercoins + $3
+                DO UPDATE SET supercoins = economy.supercoins + $3, lifetime_games = economy.lifetime_games + $3
                 """,
                 interaction.guild.id, interaction.user.id, reward
             )
