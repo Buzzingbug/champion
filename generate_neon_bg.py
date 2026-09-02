@@ -8,38 +8,41 @@ os.makedirs("assets/icons", exist_ok=True)
 width = 1500
 height = 1000
 
-# 1. Base Rich Vibrant Glowing Background (True Glassmorphic backlight)
-base = Image.new('RGBA', (width, height), (12, 14, 20, 255))
+# 1. Base Atmospheric Glow - IN SYNC WITH RING.PNG
+base = Image.new('RGBA', (width, height), (13, 15, 22, 255))
 ambient = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 amb_draw = ImageDraw.Draw(ambient)
 
-# Rich vibrant golden glow behind avatar and left side
-amb_draw.ellipse((-100, -80, 550, 550), fill=(255, 170, 20, 190))
-amb_draw.ellipse((0, 40, 450, 490), fill=(255, 200, 50, 140))
+# Top-Left: Magenta/Pink Nebula behind upper ring
+amb_draw.ellipse((-80, -100, 480, 360), fill=(235, 25, 170, 180))
+amb_draw.ellipse((40, -40, 380, 300), fill=(210, 40, 230, 140))
 
-# Center Purple / Violet nebula bloom
-amb_draw.ellipse((320, 80, 960, 440), fill=(180, 50, 255, 110))
+# Bottom of Avatar: Golden Amber Glow behind lower ring
+amb_draw.ellipse((-60, 200, 440, 560), fill=(255, 175, 20, 170))
+amb_draw.ellipse((40, 250, 360, 500), fill=(255, 215, 40, 140))
 
-# Cyan / Electric Blue on top right
-amb_draw.ellipse((860, -40, 1540, 360), fill=(0, 160, 255, 110))
+# Center Top: Purple nebula behind rank banner
+amb_draw.ellipse((380, 60, 950, 450), fill=(160, 45, 235, 120))
 
-# Rich bottom colorful backlights illuminating through the glass
-amb_draw.ellipse((0, 650, 420, 990), fill=(255, 160, 10, 140))      # Card 1: Warm Amber Gold
-amb_draw.ellipse((360, 650, 760, 990), fill=(245, 30, 200, 140))    # Card 2: Hot Neon Pink
-amb_draw.ellipse((710, 650, 1120, 990), fill=(0, 255, 180, 140))    # Card 3: Electric Cyan/Green
-amb_draw.ellipse((1070, 650, 1500, 990), fill=(255, 60, 90, 140))   # Card 4: Vivid Crimson
+# Top-Right: Electric Blue behind server & streak cards
+amb_draw.ellipse((880, -40, 1540, 380), fill=(0, 150, 255, 120))
 
-# Heavy blur for smooth atmospheric lighting
+# Bottom 4 Bento Colorful Glows
+amb_draw.ellipse((0, 650, 420, 1000), fill=(255, 160, 10, 150))      # Gold
+amb_draw.ellipse((360, 650, 760, 1000), fill=(245, 30, 200, 150))    # Pink
+amb_draw.ellipse((710, 650, 1120, 1000), fill=(0, 255, 180, 150))    # Cyan
+amb_draw.ellipse((1070, 650, 1500, 1000), fill=(255, 60, 90, 150))   # Red
+
 ambient = ambient.filter(ImageFilter.GaussianBlur(95))
 img = Image.alpha_composite(base, ambient)
 
 # Starry stardust particles
-random.seed(2026)
+random.seed(777)
 stars = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 st_draw = ImageDraw.Draw(stars)
 for _ in range(180):
-    sx = random.randint(25, width - 25)
-    sy = random.randint(25, height - 25)
+    sx = random.randint(10, width - 10)
+    sy = random.randint(10, height - 10)
     sr = random.choice([1, 1, 2])
     alpha = random.randint(90, 240)
     col = random.choice([(255, 255, 255, alpha), (255, 220, 160, alpha), (180, 220, 255, alpha)])
@@ -47,37 +50,47 @@ for _ in range(180):
 
 img = Image.alpha_composite(img, stars)
 
-# 2. Main Outer Translucent Glass Container (fill alpha=55 so light shines through!)
-outer_glass = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-og_draw = ImageDraw.Draw(outer_glass)
-outer_box = [(25, 25), (width - 25, height - 25)]
-og_draw.rounded_rectangle(outer_box, radius=32, fill=(10, 12, 18, 55), outline=(255, 255, 255, 45), width=2)
-img = Image.alpha_composite(img, outer_glass)
+# 2. EDGE-TO-EDGE Glass Overlay (Zero outer background cutoffs!)
+full_glass = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+fg_draw = ImageDraw.Draw(full_glass)
+fg_draw.rectangle([(0, 0), (width, height)], fill=(12, 14, 20, 45), outline=(255, 255, 255, 25), width=1)
+img = Image.alpha_composite(img, full_glass)
 
-# 3. Inner Glass Panes
+# 3. Inner Glass Panes Layer
 glass_panes = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 gp_draw = ImageDraw.Draw(glass_panes)
 
 def draw_true_glass(box, radius, fill_col=(255, 255, 255, 14), outline_col=(255, 255, 255, 38), width=1):
     gp_draw.rounded_rectangle(box, radius=radius, fill=fill_col, outline=outline_col, width=width)
 
+# Avatar coordinates
+av_center = (200, 230)
+av_r = 124
+
 # Top Right Server Card
-draw_true_glass([(920, 50), (1440, 180)], 24, fill_col=(10, 20, 35, 90), outline_col=(60, 120, 190, 160), width=2)
+draw_true_glass([(920, 45), (1460, 175)], 24, fill_col=(10, 20, 35, 90), outline_col=(60, 120, 190, 160), width=2)
 
 # Top Right Streak & Level Card
-draw_true_glass([(920, 205), (1440, 705)], 24, fill_col=(20, 16, 12, 90), outline_col=(255, 170, 0, 80), width=2)
-
-# VIP Plaque
-draw_true_glass([(650, 65), (860, 155)], 18, fill_col=(30, 24, 10, 130), outline_col=(255, 215, 80, 240), width=2)
+draw_true_glass([(920, 195), (1460, 695)], 24, fill_col=(20, 16, 12, 90), outline_col=(255, 170, 0, 80), width=2)
 
 # Rank Banner
-draw_true_glass([(360, 205), (880, 285)], 18, fill_col=(45, 15, 75, 160), outline_col=(210, 110, 255, 240), width=2)
+draw_true_glass([(360, 165), (890, 245)], 18, fill_col=(45, 15, 75, 160), outline_col=(210, 110, 255, 240), width=2)
 
-# 4 Mid Row Tiles
-draw_true_glass([(40, 505), (445, 585)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
-draw_true_glass([(475, 505), (880, 585)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
-draw_true_glass([(40, 605), (445, 685)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
-draw_true_glass([(475, 605), (880, 685)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
+# Sleek dock for the Badge Icons
+draw_true_glass([(360, 270), (590, 345)], 20, fill_col=(20, 24, 34, 130), outline_col=(255, 255, 255, 30), width=1)
+
+# 6 SYMMETRICAL TILES (Same width 415px, same height 80px)
+# Row 1 (VIP & Age Verified)
+draw_true_glass([(40, 395), (455, 475)], 16, fill_col=(35, 26, 10, 140), outline_col=(255, 200, 40, 220), width=2)
+draw_true_glass([(485, 395), (900, 475)], 16, fill_col=(10, 32, 22, 140), outline_col=(0, 240, 140, 220), width=2)
+
+# Row 2 (Server Rank & Goon Coins)
+draw_true_glass([(40, 500), (455, 580)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
+draw_true_glass([(485, 500), (900, 580)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
+
+# Row 3 (Member Since & Prime Time)
+draw_true_glass([(40, 605), (455, 685)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
+draw_true_glass([(485, 605), (900, 685)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
 
 # Bottom 4 Bento Glass Bases
 draw_true_glass([(40, 725), (375, 945)], 24, fill_col=(255, 170, 0, 18), outline_col=(255, 180, 40, 100))
@@ -85,26 +98,24 @@ draw_true_glass([(395, 725), (730, 945)], 24, fill_col=(240, 50, 200, 18), outli
 draw_true_glass([(750, 725), (1085, 945)], 24, fill_col=(0, 250, 180, 18), outline_col=(0, 245, 180, 100))
 draw_true_glass([(1105, 725), (1440, 945)], 24, fill_col=(255, 70, 100, 18), outline_col=(255, 80, 110, 100))
 
-# Avatar inner placeholder & Crown badge hexagon
-av_center = (200, 240)
-av_r = 135
-gp_draw.ellipse((av_center[0] - (av_r-8), av_center[1] - (av_r-8), av_center[0] + (av_r-8), av_center[1] + (av_r-8)), fill=(15, 18, 24, 255))
-gp_draw.regular_polygon((200, 370, 26), 6, fill=(24, 20, 10, 255), outline=(255, 190, 30, 255))
-
 img = Image.alpha_composite(img, glass_panes)
 
-# 4. NEON FRONT GLOW (Drawn ON TOP of the cards for radiant front bloom!)
+# 4. NEON FRONT GLOW LAYER
 front_neon = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 fn_draw = ImageDraw.Draw(front_neon)
 
-fn_draw.ellipse((av_center[0] - av_r, av_center[1] - av_r, av_center[0] + av_r, av_center[1] + av_r), outline=(255, 170, 0, 255), width=8)
+# Rank Banner
+fn_draw.rounded_rectangle([(360, 165), (890, 245)], radius=18, outline=(190, 80, 255, 240), width=5)
+
+# VIP & Verified Row 1 Neon Glow
+fn_draw.rounded_rectangle([(40, 395), (455, 475)], radius=16, outline=(255, 190, 30, 220), width=4)
+fn_draw.rounded_rectangle([(485, 395), (900, 475)], radius=16, outline=(0, 240, 140, 220), width=4)
+
+# Bottom 4 Cards Glow
 fn_draw.rounded_rectangle([(40, 725), (375, 945)], radius=24, outline=(255, 160, 0, 255), width=5)
 fn_draw.rounded_rectangle([(395, 725), (730, 945)], radius=24, outline=(245, 45, 210, 255), width=6)
 fn_draw.rounded_rectangle([(750, 725), (1085, 945)], radius=24, outline=(0, 250, 185, 255), width=5)
 fn_draw.rounded_rectangle([(1105, 725), (1440, 945)], radius=24, outline=(255, 70, 100, 255), width=5)
-
-fn_draw.rounded_rectangle([(650, 65), (860, 155)], radius=18, outline=(255, 190, 30, 220), width=4)
-fn_draw.rounded_rectangle([(360, 205), (880, 285)], radius=18, outline=(190, 80, 255, 240), width=5)
 
 blurred_front_neon = front_neon.filter(ImageFilter.GaussianBlur(12))
 img = Image.alpha_composite(img, blurred_front_neon)
@@ -113,7 +124,6 @@ img = Image.alpha_composite(img, blurred_front_neon)
 top_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 tl_draw = ImageDraw.Draw(top_layer)
 
-tl_draw.ellipse((av_center[0] - av_r, av_center[1] - av_r, av_center[0] + av_r, av_center[1] + av_r), outline=(255, 230, 130, 255), width=3)
 tl_draw.rounded_rectangle([(40, 725), (375, 945)], radius=24, outline=(255, 200, 60, 255), width=2)
 tl_draw.rounded_rectangle([(395, 725), (730, 945)], radius=24, outline=(255, 110, 235, 255), width=2)
 tl_draw.rounded_rectangle([(750, 725), (1085, 945)], radius=24, outline=(80, 255, 210, 255), width=2)
@@ -161,5 +171,13 @@ tl_draw.line([(ex - 53, ey + 25), (ex - 43, ey + 25)], fill=(255, 220, 140, 255)
 
 img = Image.alpha_composite(img, top_layer)
 
+# 6. Soft glowing backlight halo behind the ring to blend smoothly into the canvas!
+halo = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+h_draw = ImageDraw.Draw(halo)
+h_draw.ellipse((av_center[0] - 150, av_center[1] - 165, av_center[0] + 150, av_center[1] + 135), fill=(240, 30, 180, 100)) # Magenta halo top
+h_draw.ellipse((av_center[0] - 150, av_center[1] - 135, av_center[0] + 150, av_center[1] + 165), fill=(255, 200, 30, 100)) # Amber halo bottom
+halo = halo.filter(ImageFilter.GaussianBlur(35))
+img = Image.alpha_composite(img, halo)
+
 img.save("assets/neon_profile_bg.png")
-print("Saved assets/neon_profile_bg.png with true glassmorphism & front neon bloom!")
+print("Saved assets/neon_profile_bg.png with edge-to-edge glass & ring-synced lighting!")
