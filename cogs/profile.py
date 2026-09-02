@@ -3,7 +3,23 @@ from discord.ext import commands
 from discord import app_commands
 import io
 import aiohttp
+import unicodedata
 from PIL import Image, ImageDraw, ImageFont
+
+def format_clean_name(user_obj, max_len=12):
+    display = getattr(user_obj, 'display_name', getattr(user_obj, 'name', 'User'))
+    clean = unicodedata.normalize('NFKD', display).encode('ascii', 'ignore').decode('ascii').strip()
+    if len(clean) >= 2:
+        return clean[:max_len] + "..." if len(clean) > max_len else clean
+    handle = getattr(user_obj, 'name', 'User')
+    clean_handle = unicodedata.normalize('NFKD', handle).encode('ascii', 'ignore').decode('ascii').strip()
+    if len(clean_handle) >= 2:
+        return clean_handle[:max_len] + "..." if len(clean_handle) > max_len else clean_handle
+    printable = ''.join(c for c in display if 32 <= ord(c) <= 126).strip()
+    if printable:
+        return printable[:max_len]
+    uid = getattr(user_obj, 'id', 0)
+    return f"Member-{uid % 10000}"
 
 async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Image.Image:
     try:
@@ -118,7 +134,7 @@ async def generate_bento_profile(bot, user, guild):
     ImageDraw.Draw(mask).ellipse((0, 0, 180, 180), fill=255)
     img.paste(avatar_img, (70, 75), mask)
     
-    name = user.display_name[:12] + "..." if len(user.display_name) > 12 else user.display_name
+    name = format_clean_name(user, max_len=12)
     draw.text((280, 75), name, fill=(255, 255, 255), font=font_title)
     
     # Persona Pill Badge

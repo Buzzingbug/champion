@@ -5,7 +5,23 @@ import io
 import os
 import aiohttp
 import asyncio
+import unicodedata
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+def format_clean_name(user_obj, max_len=10):
+    display = getattr(user_obj, 'display_name', getattr(user_obj, 'name', 'User'))
+    clean = unicodedata.normalize('NFKD', display).encode('ascii', 'ignore').decode('ascii').strip()
+    if len(clean) >= 2:
+        return clean[:max_len] + "..." if len(clean) > max_len else clean
+    handle = getattr(user_obj, 'name', 'User')
+    clean_handle = unicodedata.normalize('NFKD', handle).encode('ascii', 'ignore').decode('ascii').strip()
+    if len(clean_handle) >= 2:
+        return clean_handle[:max_len] + "..." if len(clean_handle) > max_len else clean_handle
+    printable = ''.join(c for c in display if 32 <= ord(c) <= 126).strip()
+    if printable:
+        return printable[:max_len]
+    uid = getattr(user_obj, 'id', 0)
+    return f"Member-{uid % 10000}"
 
 async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Image.Image:
     try:
@@ -97,15 +113,15 @@ async def generate_global_leaderboard_image(bot, guild, page):
             async def get_user_data(u):
                 member = guild.get_member(u['user_id'])
                 if member:
-                    name = member.display_name
+                    name = format_clean_name(member, max_len=11)
                     av = await fetch_avatar(member, session)
                 else:
                     try:
                         user_obj = await bot.fetch_user(u['user_id'])
-                        name = user_obj.name
+                        name = format_clean_name(user_obj, max_len=11)
                         av = await fetch_avatar(user_obj, session)
                     except:
-                        name = f"Unknown ({u['user_id']})"
+                        name = f"Member-{u['user_id'] % 10000}"
                         av = await fetch_avatar(bot.user, session) # fallback
                 return name, av
 
