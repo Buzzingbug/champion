@@ -2,8 +2,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import io
+import os
 import aiohttp
+import asyncio
 import unicodedata
+import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 def format_clean_name(user_obj, max_len=12):
@@ -31,7 +34,20 @@ async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Im
                     return Image.open(io.BytesIO(data)).convert("RGBA")
     except:
         pass
-    return Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+    img = Image.new('RGBA', (256, 256), (50, 100, 200, 255))
+    return img
+
+async def fetch_guild_icon(guild: discord.Guild, session: aiohttp.ClientSession) -> Image.Image:
+    try:
+        if guild.icon:
+            url = str(guild.icon.replace(size=128, format="png"))
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    data = await resp.read()
+                    return Image.open(io.BytesIO(data)).convert("RGBA")
+    except:
+        pass
+    return None
 
 def get_level_data(xp):
     level = 1
@@ -47,181 +63,317 @@ def get_level_data(xp):
         if level >= 100:
             return 100, 1, 1, 1.0
 
-async def generate_bento_profile(bot, user, guild):
-    width, height = 1200, 800
-    
-    # 1. Base Background
+async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guild):
+    width, height = 1500, 1000
+
+    # 1. Base Pre-rendered Neon Background
     try:
-        img = Image.open("assets/bento_bg.png").convert("RGBA")
+        img = Image.open("assets/neon_profile_bg.png").convert("RGBA")
     except:
-        img = Image.new('RGBA', (width, height), (15, 15, 18, 255))
-        
+        img = Image.new('RGBA', (width, height), (10, 11, 15, 255))
+
+    draw = ImageDraw.Draw(img, "RGBA")
+
     # 2. Fonts
     try:
-        font_huge = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 85)
-        font_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 52)
-        font_stat_val = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 64)
-        font_subtitle = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 26)
-        font_stat_lbl = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 22)
-        font_small = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 22)
-        font_pill = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 20)
+        font_name = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 60)
+        font_huge_num = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 68)
+        font_streak_num = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 74)
+        font_banner = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 34)
+        font_h2 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 26)
+        font_h3 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 20)
+        font_body = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 19)
+        font_body_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 19)
+        font_badge = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 17)
+        font_small = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 16)
     except Exception as e:
-        print(f"Failed to load fonts: {e}")
-        font_huge = font_title = font_stat_val = font_subtitle = font_stat_lbl = font_small = font_pill = ImageFont.load_default()
+        print(f"Font loading error: {e}")
+        font_name = font_huge_num = font_streak_num = font_banner = font_h2 = font_h3 = font_body = font_body_bold = font_badge = font_small = ImageFont.load_default()
 
-    # 3. Fetch data
+    # 3. Fetch Data from DB
     messages = media = words = night = voice = current_streak = longest_streak = 0
+    supercoins = 0
+    coin_name = "COINS"
+    server_rank = 1
+
     if bot.db_pool:
         async with bot.db_pool.acquire() as conn:
-            record = await conn.fetchrow(
+            # Activity Record
+            act_rec = await conn.fetchrow(
                 "SELECT * FROM user_activity WHERE user_id = $1 AND guild_id = $2",
-                user.id, guild.id
+                member.id, guild.id
             )
-            if record:
-                messages = record['messages_sent'] or 0
-                media = record['media_shared'] or 0
-                words = record['words_typed'] or 0
-                night = record['night_owl_msgs'] or 0
-                voice = record['voice_minutes'] or 0
-                current_streak = record['current_streak'] or 0
-                longest_streak = record['longest_streak'] or 0
+            if act_rec:
+                messages = act_rec['messages_sent'] or 0
+                media = act_rec['media_shared'] or 0
+                words = act_rec['words_typed'] or 0
+                night = act_rec['night_owl_msgs'] or 0
+                voice = act_rec['voice_minutes'] or 0
+                current_streak = act_rec['current_streak'] or 0
+                longest_streak = act_rec['longest_streak'] or 0
+
+            # Economy Record
+            eco_rec = await conn.fetchrow(
+                "SELECT supercoins FROM economy WHERE user_id = $1 AND guild_id = $2",
+                member.id, guild.id
+            )
+            if eco_rec:
+                supercoins = eco_rec['supercoins'] or 0
+
+            # Server Rank
+            rank_rec = await conn.fetchrow(
+                "SELECT COUNT(*) + 1 AS rank FROM economy WHERE guild_id = $1 AND supercoins > $2",
+                guild.id, supercoins
+            )
+            if rank_rec:
+                server_rank = rank_rec['rank']
+
+            # Coin Name
+            coin_rec = await conn.fetchrow(
+                "SELECT coin_name FROM server_settings WHERE guild_id = $1",
+                guild.id
+            )
+            if coin_rec and coin_rec['coin_name']:
+                coin_name = coin_rec['coin_name'].upper()
 
     total_xp = (messages * 10) + (media * 25) + (voice * 5)
     level, cur_xp, next_xp, pct = get_level_data(total_xp)
 
-    # 4. Calculate Persona
-    if voice > (messages * 2) and voice > 10:
-        persona = "BROADCASTER"
-    elif media > (messages * 0.2) and media > 15:
-        persona = "MEDIA MOGUL"
-    elif messages > 100 and words > (messages * 15):
-        persona = "NOVELIST"
-    elif messages > 50:
-        persona = "ACTIVE REGULAR"
+    # Calculate Title / Rank Banner
+    if level >= 25:
+        rank_banner_title = "SERVER TITAN"
+    elif level >= 15:
+        rank_banner_title = "GOON LEGEND" if "goon" in guild.name.lower() else "SERVER LEGEND"
+    elif level >= 10:
+        rank_banner_title = "SERVER ELITE"
+    elif level >= 5:
+        rank_banner_title = "ACTIVE REGULAR"
     else:
-        persona = "NEWCOMER"
-        
-    # 5. Composite Glass Boxes
-    glass_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    glass_draw = ImageDraw.Draw(glass_layer)
+        rank_banner_title = "THE NEWCOMER"
 
-    def draw_glass_box(box):
-        glass_draw.rounded_rectangle(box, radius=28, fill=(255, 255, 255, 14), outline=(255, 255, 255, 45), width=2)
-        
-    # Perfectly symmetrical Bento Grid
-    draw_glass_box([40, 40, 780, 385])     # Box 1: User Profile & XP
-    draw_glass_box([800, 40, 1160, 385])   # Box 2: Streak
-    draw_glass_box([40, 415, 400, 760])    # Box 3: Messages
-    draw_glass_box([420, 415, 780, 760])   # Box 4: Media
-    draw_glass_box([800, 415, 1160, 760])  # Box 5: Voice
+    # Helper to paste icon
+    def paste_icon(path, x, y, size=32):
+        if os.path.exists(path):
+            try:
+                ic = Image.open(path).convert("RGBA").resize((size, size))
+                img.paste(ic, (x, y), ic)
+            except:
+                pass
 
-    img = Image.alpha_composite(img, glass_layer)
-    draw = ImageDraw.Draw(img, "RGBA")
-    
-    # Helper to paste icons cleanly
-    def paste_icon(path, x, y, size=34):
-        try:
-            ic = Image.open(path).convert("RGBA").resize((size, size))
-            img.paste(ic, (x, y), ic)
-        except:
-            pass
-
-    # --- Box 1: Avatar & Profile & XP ---
+    # 4. Fetch User Avatar & Guild Icon in Parallel
     async with aiohttp.ClientSession() as session:
-        avatar_img = await fetch_avatar(user, session)
-    avatar_img = avatar_img.resize((180, 180))
-    mask = Image.new("L", (180, 180), 0)
-    ImageDraw.Draw(mask).ellipse((0, 0, 180, 180), fill=255)
-    img.paste(avatar_img, (70, 75), mask)
+        avatar_task = fetch_avatar(member, session)
+        guild_icon_task = fetch_guild_icon(guild, session)
+        avatar_img, g_icon_img = await asyncio.gather(avatar_task, guild_icon_task)
+
+    # Paste Avatar into the glowing neon halo
+    av_r = 126
+    av_center = (200, 240)
+    avatar_img = avatar_img.resize((av_r * 2, av_r * 2))
+    av_mask = Image.new("L", (av_r * 2, av_r * 2), 0)
+    ImageDraw.Draw(av_mask).ellipse((0, 0, av_r * 2, av_r * 2), fill=255)
+    img.paste(avatar_img, (av_center[0] - av_r, av_center[1] - av_r), av_mask)
+
+    paste_icon("assets/icons/crown.png", 184, 354, 32)
+
+    # 5. User Name & VIP Plaque
+    clean_name = format_clean_name(member, max_len=12)
+    draw.text((360, 80), clean_name, fill=(255, 255, 255), font=font_name)
+
+    # VIP Member Plaque (Top Center)
+    paste_icon("assets/icons/crown.png", 670, 88, 38)
+    draw.text((725, 84), "VIP", fill=(255, 215, 60), font=font_h2)
+    draw.text((725, 114), "MEMBER", fill=(255, 220, 120), font=font_h3)
+
+    # Sublabel: Server Rank
+    sub_rank_label = f"— {coin_name} RANK —" if len(coin_name) < 14 else "— SERVER RANK —"
+    draw.text((530, 178), sub_rank_label, fill=(190, 160, 220), font=font_h3)
+
+    # Purple Rank Banner
+    paste_icon("assets/icons/trophy.png", 390, 222, 42)
+    draw.text((455, 225), rank_banner_title, fill=(255, 255, 255), font=font_banner)
+    # Vector arrow
+    draw.polygon([(820, 235), (835, 245), (820, 255)], fill=(220, 160, 255, 240))
+
+    # Badges Bar (Dynamic detection)
+    badges = []
+    # Check Booster
+    if member.premium_since:
+        badges.append(("Booster", (180, 70, 255, 45), (200, 100, 255)))
+    # Check VIP
+    has_vip = any("vip" in r.name.lower() for r in member.roles) or member.guild_permissions.administrator
+    if has_vip:
+        badges.append(("VIP", (255, 190, 20, 45), (255, 200, 40)))
+    # Check Staff
+    if member.guild_permissions.manage_messages or member.guild_permissions.kick_members or member.guild_permissions.administrator:
+        badges.append(("Staff", (60, 120, 255, 45), (100, 160, 255)))
+    # Check Verified
+    if any("verified" in r.name.lower() for r in member.roles):
+        badges.append(("Verified", (0, 220, 120, 40), (0, 240, 140)))
+    # Check Content Creator / Creator
+    if any("creator" in r.name.lower() or "artist" in r.name.lower() for r in member.roles):
+        badges.append(("Creator", (255, 50, 60, 40), (255, 80, 90)))
+    # Check OG
+    if member.joined_at and (discord.utils.utcnow() - member.joined_at).days > 180:
+        badges.append(("OG", (255, 120, 30, 45), (255, 140, 40)))
     
-    name = format_clean_name(user, max_len=12)
-    draw.text((280, 75), name, fill=(255, 255, 255), font=font_title)
-    
-    # Persona Pill Badge
-    badge_text = persona.upper()
-    tb = draw.textbbox((0, 0), badge_text, font=font_pill)
-    bw = (tb[2] - tb[0]) + 24
-    badge_h = 32
-    draw.rounded_rectangle([(280, 144), (280 + bw, 144 + badge_h)], radius=8, fill=(35, 33, 22, 255), outline=(251, 236, 144, 180), width=1)
-    draw.text((292, 150), badge_text, fill=(251, 236, 144), font=font_pill)
+    if not badges:
+        badges.append(("Member", (100, 140, 200, 45), (140, 180, 240)))
 
-    # Level & XP text
-    draw.text((280, 205), f"LEVEL {level}", fill=(255, 255, 255), font=font_subtitle)
-    xp_str = f"{cur_xp:,} / {next_xp:,} XP"
-    draw.text((410, 208), xp_str, fill=(180, 195, 215), font=font_small)
+    cur_x = 360
+    for b_label, bg_col, border_col in badges:
+        tb = draw.textbbox((0, 0), b_label, font=font_badge)
+        bw = (tb[2] - tb[0]) + 22
+        if cur_x + bw > 895:
+            break
+        draw.rounded_rectangle([(cur_x, 325), (cur_x + bw, 360)], radius=12, fill=bg_col, outline=border_col, width=1)
+        draw.text((cur_x + 11, 332), b_label, fill=(255, 255, 255), font=font_badge)
+        cur_x += bw + 8
 
-    pct_str = f"{int(pct * 100)}%"
-    tb_pct = draw.textbbox((0, 0), pct_str, font=font_subtitle)
-    draw.text((740 - (tb_pct[2] - tb_pct[0]), 205), pct_str, fill=(251, 236, 144), font=font_subtitle)
+    # 6. Top Right Server Identity Card
+    if g_icon_img:
+        g_icon_img = g_icon_img.resize((80, 80))
+        g_mask = Image.new("L", (80, 80), 0)
+        ImageDraw.Draw(g_mask).rounded_rectangle([(0, 0), (80, 80)], radius=18, fill=255)
+        img.paste(g_icon_img, (945, 75), g_mask)
+    else:
+        draw.rounded_rectangle([(945, 75), (1025, 155)], radius=18, fill=(30, 50, 80, 255), outline=(0, 180, 255, 180), width=2)
+        paste_icon("assets/icons/media.png", 965, 95, 40)
 
-    # Progress Bar
-    bar_x0, bar_y0, bar_x1, bar_y1 = 280, 250, 740, 272
-    draw.rounded_rectangle([(bar_x0, bar_y0), (bar_x1, bar_y1)], radius=11, fill=(255, 255, 255, 25))
-    fill_w = int((bar_x1 - bar_x0) * pct)
-    if fill_w > 12:
-        draw.rounded_rectangle([(bar_x0, bar_y0), (bar_x0 + fill_w, bar_y1)], radius=11, fill=(251, 236, 144, 220))
+    server_title = guild.name[:16] + "..." if len(guild.name) > 16 else guild.name
+    draw.text((1045, 82), server_title, fill=(255, 255, 255), font=ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 36))
+    draw.text((1045, 130), "DISCORD SERVER", fill=(140, 170, 210), font=font_h3)
 
-    draw.text((280, 315), f"Total Server XP: {total_xp:,}", fill=(160, 175, 195), font=font_small)
-
-    # --- Box 2: Streak ---
-    paste_icon("assets/icons/fire.png", 835, 75, 34)
-    draw.text((880, 80), "CURRENT STREAK", fill=(200, 210, 220), font=font_stat_lbl)
+    # 7. Streak & Leveling Card (Upper Right)
+    paste_icon("assets/icons/fire.png", 950, 230, 34)
+    draw.text((995, 236), "CURRENT STREAK", fill=(255, 180, 80), font=font_h3)
 
     sv = f"{current_streak}"
-    draw.text((835, 140), sv, fill=(255, 120, 80) if current_streak > 0 else (255, 255, 255), font=font_huge)
-    tb_s = draw.textbbox((0, 0), sv, font=font_huge)
-    nw = tb_s[2] - tb_s[0]
-    label_streak = "Day Active" if current_streak == 1 else "Days Active"
-    draw.text((835 + nw + 16, 185), label_streak, fill=(220, 220, 220), font=font_subtitle)
+    draw.text((950, 275), sv, fill=(255, 140, 50) if current_streak > 0 else (255, 255, 255), font=font_streak_num)
+    tb_s = draw.textbbox((0, 0), sv, font=font_streak_num)
+    draw.text((950 + (tb_s[2] - tb_s[0]) + 16, 302), "Day Active" if current_streak == 1 else "Days Active", fill=(255, 255, 255), font=font_h2)
 
-    draw.text((835, 315), f"Longest Streak: {longest_streak} Days", fill=(160, 175, 195), font=font_small)
+    draw.text((950, 375), f"Longest Streak: {longest_streak} Days", fill=(160, 175, 195), font=font_body)
 
-    # --- Box 3: Messages ---
-    paste_icon("assets/icons/chat.png", 75, 450, 34)
-    draw.text((120, 455), "MESSAGES", fill=(200, 210, 220), font=font_stat_lbl)
-    draw.text((75, 520), f"{messages:,}", fill=(255, 255, 255), font=font_stat_val)
-    draw.text((75, 680), f"{words:,} words typed", fill=(160, 175, 195), font=font_small)
+    # Level & XP
+    draw.text((950, 420), f"LEVEL {level}", fill=(255, 220, 100), font=font_h2)
+    draw.text((1110, 424), f"{cur_xp:,} / {next_xp:,} XP", fill=(180, 195, 215), font=font_body)
+    draw.text((1355, 420), f"{int(pct * 100)}%", fill=(255, 220, 100), font=font_h2)
 
-    # --- Box 4: Media Shared ---
-    paste_icon("assets/icons/media.png", 455, 450, 34)
-    draw.text((500, 455), "MEDIA SHARED", fill=(200, 210, 220), font=font_stat_lbl)
-    draw.text((455, 520), f"{media:,}", fill=(255, 255, 255), font=font_stat_val)
-    draw.text((455, 680), "Photos, clips & files", fill=(160, 175, 195), font=font_small)
+    # Candy-Bar Progress Bar
+    bar_box = [(950, 465), (1400, 493)]
+    draw.rounded_rectangle(bar_box, radius=14, fill=(35, 38, 48, 255), outline=(255, 255, 255, 20), width=1)
+    fill_w = max(int(450 * pct), 18)
+    bar_fill = Image.new('RGBA', (fill_w, 28), (0, 0, 0, 0))
+    bf_draw = ImageDraw.Draw(bar_fill)
+    bf_draw.rounded_rectangle([(0, 0), (fill_w, 28)], radius=14, fill=(255, 170, 20, 240))
+    # Candy stripes
+    for sx in range(-20, fill_w + 30, 16):
+        bf_draw.line([(sx, 0), (sx + 14, 28)], fill=(255, 220, 90, 180), width=5)
+    img.paste(bar_fill, (950, 465), bar_fill)
 
-    # --- Box 5: Voice Time ---
-    paste_icon("assets/icons/voice.png", 835, 450, 34)
-    draw.text((880, 455), "VOICE TIME", fill=(200, 210, 220), font=font_stat_lbl)
-    if voice >= 60:
-        v_str = f"{voice // 60}h {voice % 60}m"
+    draw.text((950, 515), f"Total Server XP: {total_xp:,}", fill=(160, 175, 195), font=font_body)
+
+    draw.line([(950, 555), (1400, 555)], fill=(255, 255, 255, 40), width=1)
+
+    # Boost Status
+    paste_icon("assets/icons/boost.png", 950, 580, 36)
+    draw.text((1000, 580), "BOOST STATUS", fill=(210, 100, 255), font=font_h3)
+    if member.premium_since:
+        delta = discord.utils.utcnow() - member.premium_since
+        months = max(1, int(delta.days // 30))
+        boost_desc = f"Server Booster • {months} Months"
     else:
-        v_str = f"{voice} mins"
-    draw.text((835, 520), v_str, fill=(255, 255, 255), font=font_stat_val)
-    draw.text((835, 680), f"{voice:,} total minutes", fill=(160, 175, 195), font=font_small)
+        boost_desc = "Standard Member"
+    draw.text((1000, 608), boost_desc, fill=(220, 225, 235), font=font_body)
 
-    final_buffer = io.BytesIO()
-    img.convert('RGB').save(final_buffer, format="PNG")
-    final_buffer.seek(0)
-    return discord.File(fp=final_buffer, filename="bento_profile.png")
+    # Favorite Channel
+    paste_icon("assets/icons/chat.png", 950, 645, 34)
+    draw.text((1000, 645), "ACTIVITY STATUS", fill=(140, 180, 255), font=font_h3)
+    draw.text((1000, 672), f"Active Member • {messages:,} msgs", fill=(220, 225, 235), font=font_body)
+
+    # 8. Middle Stats Row
+    # Tile 1: Server Rank
+    paste_icon("assets/icons/trophy.png", 55, 522, 38)
+    draw.text((105, 518), "SERVER RANK", fill=(255, 200, 50), font=font_h3)
+    total_m = guild.member_count or 100
+    draw.text((105, 548), f"#{server_rank} / {total_m:,} Members", fill=(255, 255, 255), font=font_body_bold)
+
+    # Tile 2: Server Coins
+    paste_icon("assets/icons/coin.png", 375, 522, 38)
+    draw.text((425, 518), coin_name[:12], fill=(255, 200, 50), font=font_h3)
+    draw.text((425, 548), f"{supercoins:,} Coins", fill=(255, 255, 255), font=font_body_bold)
+
+    # Tile 3: VIP Exclusive Banner
+    paste_icon("assets/icons/crown.png", 585, 522, 38)
+    draw.text((635, 518), "VIP  •  Exclusive Access", fill=(255, 210, 60), font=font_h3)
+    draw.text((635, 548), f"Thank you for supporting {guild.name[:12]}!", fill=(180, 195, 215), font=font_small)
+
+    # Tile 4: Member Since
+    paste_icon("assets/icons/calendar.png", 55, 622, 38)
+    draw.text((105, 618), "MEMBER SINCE", fill=(180, 140, 255), font=font_h3)
+    join_str = member.joined_at.strftime("%b %d, %Y") if member.joined_at else "Recent"
+    draw.text((105, 648), f"Joined {guild.name[:10]} • {join_str}", fill=(255, 255, 255), font=font_body_bold)
+
+    # Tile 5: Reactions / Engagement
+    paste_icon("assets/icons/heart.png", 415, 622, 38)
+    draw.text((465, 618), "REACTIONS & ENGAGEMENT", fill=(255, 80, 110), font=font_h3)
+    reactions_est = (words // 4) + messages
+    draw.text((465, 648), f"{reactions_est:,} Total Interactions Recorded", fill=(255, 255, 255), font=font_body_bold)
+
+    # 9. Bottom 4 Neon Bento Cards
+    # Card 1: Messages
+    paste_icon("assets/icons/chat.png", 65, 750, 36)
+    draw.text((112, 755), "MESSAGES", fill=(255, 190, 60), font=font_h3)
+    draw.text((65, 810), f"{messages:,}", fill=(255, 255, 255), font=font_huge_num)
+    draw.text((65, 905), f"{words:,} words typed", fill=(170, 185, 205), font=font_body)
+
+    # Card 2: Media
+    paste_icon("assets/icons/media.png", 420, 750, 36)
+    draw.text((467, 755), "MEDIA SHARED", fill=(255, 100, 220), font=font_h3)
+    draw.text((420, 810), f"{media:,}", fill=(255, 255, 255), font=font_huge_num)
+    draw.text((420, 905), "Photos, clips & files", fill=(170, 185, 205), font=font_body)
+
+    # Card 3: Voice
+    paste_icon("assets/icons/voice.png", 775, 750, 36)
+    draw.text((822, 755), "VOICE TIME", fill=(0, 240, 180), font=font_h3)
+    v_str = f"{voice // 60}h {voice % 60}m" if voice >= 60 else f"{voice} mins"
+    draw.text((775, 810), v_str, fill=(255, 255, 255), font=font_huge_num)
+    draw.text((775, 905), f"{voice:,} total minutes", fill=(170, 185, 205), font=font_body)
+
+    # Card 4: Reactions Given
+    paste_icon("assets/icons/heart.png", 1130, 750, 36)
+    draw.text((1177, 755), "REACTIONS", fill=(255, 90, 120), font=font_h3)
+    draw.text((1130, 810), f"{reactions_est:,}", fill=(255, 255, 255), font=font_huge_num)
+    draw.text((1130, 905), "Given across channels", fill=(170, 185, 205), font=font_body)
+
+    buffer = io.BytesIO()
+    img.convert('RGB').save(buffer, format="PNG")
+    buffer.seek(0)
+    return discord.File(fp=buffer, filename="profile.png")
 
 
 class ProfileCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="profile", description="View your stunning Activity Bento Box.")
-    @app_commands.describe(user="The user to view the profile for.")
+    @app_commands.command(name="profile", description="View your ultra-premium Cyberpunk Gamer Profile Card.")
+    @app_commands.describe(user="The member to view the profile for.")
     async def profile(self, interaction: discord.Interaction, user: discord.Member = None):
-        if not user:
-            user = interaction.user
-            
-        await interaction.response.defer()
+        target_member = user if user else interaction.user
         
+        # Ensure we have member object with guild attributes
+        if not isinstance(target_member, discord.Member):
+            target_member = interaction.guild.get_member(target_member.id) or target_member
+
+        await interaction.response.defer()
+
         try:
-            file = await generate_bento_profile(self.bot, user, interaction.guild)
+            file = await generate_neon_profile(self.bot, target_member, interaction.guild)
             await interaction.followup.send(file=file)
         except Exception as e:
-            print(f"Profile error: {e}")
-            await interaction.followup.send("Failed to generate profile.")
+            print(f"Neon profile generation error: {e}")
+            await interaction.followup.send("❌ Failed to generate profile.")
 
 async def setup(bot):
     await bot.add_cog(ProfileCog(bot))

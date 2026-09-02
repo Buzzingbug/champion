@@ -1,0 +1,51 @@
+from PIL import Image, ImageDraw
+
+def c_icon():
+    return Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+
+# 1. Crown Icon (Gold)
+ic_crown = c_icon()
+d = ImageDraw.Draw(ic_crown)
+d.polygon([(10, 46), (10, 26), (22, 36), (32, 14), (42, 36), (54, 26), (54, 46)], fill=(255, 200, 40, 240))
+d.rounded_rectangle([(10, 46), (54, 52)], radius=2, fill=(255, 200, 40, 240))
+d.ellipse([(8, 22), (14, 28)], fill=(255, 240, 140, 255))
+d.ellipse([(30, 10), (36, 16)], fill=(255, 240, 140, 255))
+d.ellipse([(50, 22), (56, 28)], fill=(255, 240, 140, 255))
+ic_crown.save("assets/icons/crown.png")
+
+# 2. Heart Icon (Red)
+ic_heart = c_icon()
+d = ImageDraw.Draw(ic_heart)
+d.polygon([(32, 54), (12, 32), (12, 20), (22, 12), (32, 20), (42, 12), (52, 20), (52, 32)], fill=(255, 60, 90, 240))
+ic_heart.save("assets/icons/heart.png")
+
+# 3. Calendar Icon (Purple/White)
+ic_cal = c_icon()
+d = ImageDraw.Draw(ic_cal)
+d.rounded_rectangle([(10, 16), (54, 54)], radius=6, outline=(180, 140, 255, 240), width=3)
+d.rectangle([(10, 16), (54, 26)], fill=(180, 140, 255, 240))
+d.line([(18, 10), (18, 18)], fill=(255, 255, 255, 255), width=3)
+d.line([(46, 10), (46, 18)], fill=(255, 255, 255, 255), width=3)
+d.ellipse([(20, 36), (26, 42)], fill=(255, 255, 255, 200))
+d.ellipse([(38, 36), (44, 42)], fill=(255, 255, 255, 200))
+ic_cal.save("assets/icons/calendar.png")
+
+# 4. Coin Icon (Gold Stack)
+ic_coin = c_icon()
+d = ImageDraw.Draw(ic_coin)
+d.ellipse([(14, 34), (50, 48)], fill=(230, 160, 20, 240), outline=(255, 210, 60, 255), width=2)
+d.ellipse([(14, 24), (50, 38)], fill=(240, 180, 30, 240), outline=(255, 220, 70, 255), width=2)
+d.ellipse([(14, 14), (50, 28)], fill=(255, 200, 40, 240), outline=(255, 240, 100, 255), width=2)
+ic_coin.save("assets/icons/coin.png")
+
+# 5. Rocket / Boost Icon (Magenta/Purple)
+ic_boost = c_icon()
+d = ImageDraw.Draw(ic_boost)
+d.polygon([(32, 10), (46, 24), (42, 42), (32, 38), (22, 42), (18, 24)], fill=(210, 80, 255, 240))
+d.polygon([(18, 32), (8, 44), (20, 42)], fill=(170, 40, 255, 240))
+d.polygon([(46, 32), (56, 44), (44, 42)], fill=(170, 40, 255, 240))
+d.ellipse([(28, 22), (36, 30)], fill=(255, 255, 255, 255))
+d.polygon([(26, 42), (32, 56), (38, 42)], fill=(255, 140, 40, 240))
+ic_boost.save("assets/icons/boost.png")
+
+print("Generated crown, heart, calendar, coin, and boost icons!")
