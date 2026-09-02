@@ -193,6 +193,20 @@ class GamesBot(commands.Bot):
                     rol_prize INT,
                     last_posted DATE
                 );
+
+                CREATE TABLE IF NOT EXISTS user_activity (
+                    user_id BIGINT,
+                    guild_id BIGINT,
+                    messages_sent INT DEFAULT 0,
+                    media_shared INT DEFAULT 0,
+                    words_typed BIGINT DEFAULT 0,
+                    night_owl_msgs INT DEFAULT 0,
+                    voice_minutes INT DEFAULT 0,
+                    current_streak INT DEFAULT 0,
+                    longest_streak INT DEFAULT 0,
+                    last_active_date DATE,
+                    PRIMARY KEY (user_id, guild_id)
+                );
             """)
             
             # Safely add the post_cost column to existing tables if they were created before this update
