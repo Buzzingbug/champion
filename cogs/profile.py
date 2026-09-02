@@ -325,6 +325,7 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     # 7. Single Role Badge: STAFF (Linked to /badge add role:@Role label:Staff)
     staff_role_ids = set()
     vip_role_ids = set()
+    verified_role_ids = set()
     for r in custom_badge_rows:
         lbl = (r['badge_label'] or '').lower().strip()
         rid = r['role_id']
@@ -332,6 +333,8 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
             staff_role_ids.add(rid)
         if any(k in lbl for k in ("vip", "supporter", "premium")):
             vip_role_ids.add(rid)
+        if any(k in lbl for k in ("verified", "age", "18+", "check")):
+            verified_role_ids.add(rid)
 
     has_staff = (
         any(r.id in staff_role_ids for r in member.roles) or
@@ -351,24 +354,35 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     # Row 1 Tile 1: VIP STATUS (Linked to /badge add role:@Role label:VIP)
     has_vip = (
         any(r.id in vip_role_ids for r in member.roles) or
-        any("vip" in r.name.lower() for r in member.roles) or 
-        member.guild_permissions.administrator
+        any("vip" in r.name.lower() for r in member.roles)
     )
     if has_vip:
+        draw.rounded_rectangle([(40, 395), (455, 475)], radius=16, fill=(35, 26, 10, 180), outline=(255, 200, 40, 220), width=2)
         paste_icon("assets/icons/badge_vip.png", 52, 408, 48)
         draw.text((112, 408), "VIP STATUS", fill=(255, 215, 60), font=font_h3)
         draw.text((112, 438), "Active VIP Access  •  Supporter", fill=(255, 255, 255), font=font_body_b)
     else:
-        paste_icon("assets/icons/crown.png", 55, 412, 42)
-        draw.text((112, 408), "VIP STATUS", fill=(160, 175, 195), font=font_h3)
-        draw.text((112, 438), "Standard  •  Free Member", fill=(180, 195, 215), font=font_body_b)
+        draw.rounded_rectangle([(40, 395), (455, 475)], radius=16, fill=(18, 22, 32, 170), outline=(140, 110, 220, 120), width=2)
+        paste_icon("assets/icons/calendar.png", 55, 412, 40)
+        draw.text((112, 408), "MEMBER SINCE", fill=(190, 150, 255), font=font_h3)
+        join_str = member.joined_at.strftime("Joined  •  %b %d, %Y") if member.joined_at else "Joined  •  Recent Member"
+        draw.text((112, 438), join_str, fill=(255, 255, 255), font=font_body_b)
 
-    # Row 1 Tile 2: AGE VERIFIED
-    paste_icon("assets/icons/heart.png", 500, 412, 42)
-    draw.text((558, 408), "AGE VERIFIED", fill=(0, 240, 140), font=font_h3)
-    has_verified = any("verified" in r.name.lower() for r in member.roles)
-    ver_sub = "18+ Verified  •  Official Check" if has_verified else "Standard Check  •  Member"
-    draw.text((558, 438), ver_sub, fill=(255, 255, 255), font=font_body_b)
+    # Row 1 Tile 2: AGE VERIFIED (Linked to /badge add role:@Role label:Verified)
+    has_verified = (
+        any(r.id in verified_role_ids for r in member.roles) or
+        any("verified" in r.name.lower() or "18+" in r.name.lower() for r in member.roles)
+    )
+    if has_verified:
+        draw.rounded_rectangle([(485, 395), (900, 475)], radius=16, fill=(10, 32, 22, 180), outline=(0, 240, 140, 220), width=2)
+        paste_icon("assets/icons/heart.png", 500, 412, 42)
+        draw.text((558, 408), "AGE VERIFIED", fill=(0, 240, 140), font=font_h3)
+        draw.text((558, 438), "18+ Verified  •  Official Check", fill=(255, 255, 255), font=font_body_b)
+    else:
+        draw.rounded_rectangle([(485, 395), (900, 475)], radius=16, fill=(18, 22, 32, 170), outline=(0, 180, 240, 120), width=2)
+        paste_icon("assets/icons/fire.png", 500, 412, 38)
+        draw.text((558, 408), "PRIME TIME", fill=(0, 220, 255), font=font_h3)
+        draw.text((558, 438), "Night Owl  •  11 PM - 3 AM", fill=(255, 255, 255), font=font_body_b)
 
     # Row 2: SERVER RANK & GOON COINS
     paste_icon("assets/icons/trophy.png", 55, 517, 38)

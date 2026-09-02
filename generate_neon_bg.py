@@ -64,9 +64,7 @@ draw_glass([(920, 195), (1460, 685)], 24, fill_col=(14, 18, 28, 175), outline_co
 draw_glass([(360, 165), (890, 245)], 18, fill_col=(45, 15, 75, 160), outline_col=(210, 110, 255, 240), width=2)
 
 # 6 SYMMETRICAL TILES (415px x 80px)
-# Row 1: VIP STATUS & AGE VERIFIED
-draw_glass([(40, 395), (455, 475)], 16, fill_col=(35, 26, 10, 140), outline_col=(255, 200, 40, 220), width=2)
-draw_glass([(485, 395), (900, 475)], 16, fill_col=(10, 32, 22, 140), outline_col=(0, 240, 140, 220), width=2)
+# Note: Row 1 is rendered dynamically in cogs/profile.py depending on earned badge roles!
 
 # Row 2: Server Rank & Goon Coins
 draw_glass([(40, 500), (455, 580)], 16, fill_col=(255, 255, 255, 12), outline_col=(255, 255, 255, 35))
@@ -88,8 +86,6 @@ img = Image.alpha_composite(img, glass_panes)
 front_neon = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 fn_draw = ImageDraw.Draw(front_neon)
 fn_draw.rounded_rectangle([(360, 165), (890, 245)], radius=18, outline=(190, 80, 255, 240), width=5)
-fn_draw.rounded_rectangle([(40, 395), (455, 475)], radius=16, outline=(255, 190, 30, 220), width=4)
-fn_draw.rounded_rectangle([(485, 395), (900, 475)], radius=16, outline=(0, 240, 140, 220), width=4)
 fn_draw.rounded_rectangle([(40, 605), (455, 685)], radius=16, outline=(200, 80, 255, 200), width=4)
 fn_draw.rounded_rectangle([(485, 605), (900, 685)], radius=16, outline=(0, 200, 255, 200), width=4)
 
