@@ -69,12 +69,27 @@ async def generate_bento_profile(bot, user, guild):
     elif messages > 10:
         persona = "The Regular"
         
-    # Helper to draw glass box
+    # Helper to draw glass box using alpha composite
+    glass_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    glass_draw = ImageDraw.Draw(glass_layer)
+
     def draw_glass_box(box):
-        draw.rounded_rectangle(box, radius=30, fill=(255, 255, 255, 15), outline=(255, 255, 255, 40), width=2)
+        glass_draw.rounded_rectangle(box, radius=30, fill=(255, 255, 255, 15), outline=(255, 255, 255, 40), width=2)
         
-    # Box 1: User Profile (Top Left) (x: 40, y: 40, w: 740, h: 340)
+    # Box 1: User Profile (Top Left)
     draw_glass_box([40, 40, 780, 380])
+    # Box 2: Streak (Top Right)
+    draw_glass_box([820, 40, 1160, 380])
+    # Box 3: Messages (Bottom Left)
+    draw_glass_box([40, 420, 386, 760])
+    # Box 4: Media (Bottom Center)
+    draw_glass_box([426, 420, 772, 760])
+    # Box 5: Voice Time (Bottom Right)
+    draw_glass_box([812, 420, 1160, 760])
+
+    # Composite the glass boxes onto the background
+    img = Image.alpha_composite(img, glass_layer)
+    draw = ImageDraw.Draw(img, "RGBA")
     
     # Avatar
     async with aiohttp.ClientSession() as session:
@@ -91,28 +106,22 @@ async def generate_bento_profile(bot, user, guild):
     # Persona
     draw.text((360, 220), f"Persona: {persona}", fill=(251, 236, 144), font=font_subtitle)
     
-    # Box 2: Streak (Top Right) (x: 820, y: 40, w: 340, h: 340)
-    draw_glass_box([820, 40, 1160, 380])
+    # Box 2 Text
     draw.text((860, 80), "Current Streak", fill=(200, 210, 220), font=font_stat_lbl)
-    
-    # Center streak value
     sv = f"{current_streak} Days"
     bbox = draw.textbbox((0,0), sv, font=font_huge)
     tw = bbox[2] - bbox[0]
     draw.text((820 + (340 - tw)//2, 180), sv, fill=(251, 100, 100) if current_streak > 3 else (255,255,255), font=font_huge)
     
-    # Box 3: Messages (Bottom Left)
-    draw_glass_box([40, 420, 386, 760])
+    # Box 3 Text
     draw.text((80, 470), "Messages", fill=(200, 210, 220), font=font_stat_lbl)
     draw.text((80, 550), f"{messages:,}", fill=(255, 255, 255), font=font_stat_val)
 
-    # Box 4: Media (Bottom Center)
-    draw_glass_box([426, 420, 772, 760])
+    # Box 4 Text
     draw.text((466, 470), "Media Shared", fill=(200, 210, 220), font=font_stat_lbl)
     draw.text((466, 550), f"{media:,}", fill=(255, 255, 255), font=font_stat_val)
 
-    # Box 5: Voice Time (Bottom Right)
-    draw_glass_box([812, 420, 1160, 760])
+    # Box 5 Text
     draw.text((852, 470), "Voice (Mins)", fill=(200, 210, 220), font=font_stat_lbl)
     draw.text((852, 550), f"{voice:,}", fill=(255, 255, 255), font=font_stat_val)
 
