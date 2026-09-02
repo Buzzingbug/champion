@@ -322,12 +322,23 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     draw.text((455, 185), rank_banner_title, fill=(255, 255, 255), font=font_banner)
     draw.polygon([(850, 195), (865, 205), (850, 215)], fill=(220, 160, 255, 240))
 
-    # 7. Single Role Badge: STAFF (Only shown if member has the staff role)
+    # 7. Single Role Badge: STAFF (Linked to /badge add role:@Role label:Staff)
+    staff_role_ids = set()
+    vip_role_ids = set()
+    for r in custom_badge_rows:
+        lbl = (r['badge_label'] or '').lower().strip()
+        rid = r['role_id']
+        if any(k in lbl for k in ("staff", "mod", "admin")):
+            staff_role_ids.add(rid)
+        if any(k in lbl for k in ("vip", "supporter", "premium")):
+            vip_role_ids.add(rid)
+
     has_staff = (
+        any(r.id in staff_role_ids for r in member.roles) or
+        any("staff" in r.name.lower() or "mod" in r.name.lower() for r in member.roles) or
         member.guild_permissions.manage_messages or 
         member.guild_permissions.kick_members or 
-        member.guild_permissions.administrator or 
-        any("staff" in r.name.lower() or "mod" in r.name.lower() for r in member.roles)
+        member.guild_permissions.administrator
     )
 
     if has_staff:
@@ -337,8 +348,12 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
         draw.text((428, 312), "Official Moderator", fill=(175, 195, 220), font=ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 14))
 
     # 8. Symmetrical 415px x 80px Tiles
-    # Row 1 Tile 1: VIP STATUS (Linked to VIP badge role!)
-    has_vip = any("vip" in r.name.lower() for r in member.roles) or member.guild_permissions.administrator
+    # Row 1 Tile 1: VIP STATUS (Linked to /badge add role:@Role label:VIP)
+    has_vip = (
+        any(r.id in vip_role_ids for r in member.roles) or
+        any("vip" in r.name.lower() for r in member.roles) or 
+        member.guild_permissions.administrator
+    )
     if has_vip:
         paste_icon("assets/icons/badge_vip.png", 52, 408, 48)
         draw.text((112, 408), "VIP STATUS", fill=(255, 215, 60), font=font_h3)
