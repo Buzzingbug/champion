@@ -6,7 +6,6 @@ import os
 import aiohttp
 import asyncio
 import unicodedata
-import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 def format_clean_name(user_obj, max_len=12):
@@ -34,8 +33,7 @@ async def fetch_avatar(user: discord.User, session: aiohttp.ClientSession) -> Im
                     return Image.open(io.BytesIO(data)).convert("RGBA")
     except:
         pass
-    img = Image.new('RGBA', (256, 256), (50, 100, 200, 255))
-    return img
+    return Image.new('RGBA', (256, 256), (50, 100, 200, 255))
 
 async def fetch_guild_icon(guild: discord.Guild, session: aiohttp.ClientSession) -> Image.Image:
     try:
@@ -63,14 +61,24 @@ def get_level_data(xp):
         if level >= 100:
             return 100, 1, 1, 1.0
 
+COLOR_MAP = {
+    "gold": ((255, 190, 20, 50), (255, 200, 40)),
+    "purple": ((180, 70, 255, 50), (200, 100, 255)),
+    "cyan": ((0, 210, 255, 45), (0, 230, 255)),
+    "green": ((0, 220, 120, 40), (0, 240, 140)),
+    "red": ((255, 50, 60, 45), (255, 80, 90)),
+    "blue": ((60, 120, 255, 50), (100, 160, 255)),
+    "orange": ((255, 120, 30, 50), (255, 140, 40)),
+}
+
 async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guild):
     width, height = 1500, 1000
 
-    # 1. Base Pre-rendered Neon Background
+    # 1. Base Pre-rendered Neon Background with true glassmorphic backlight
     try:
         img = Image.open("assets/neon_profile_bg.png").convert("RGBA")
     except:
-        img = Image.new('RGBA', (width, height), (10, 11, 15, 255))
+        img = Image.new('RGBA', (width, height), (12, 14, 20, 255))
 
     draw = ImageDraw.Draw(img, "RGBA")
 
@@ -85,16 +93,16 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
         font_body = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 19)
         font_body_bold = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 19)
         font_badge = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 17)
-        font_small = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 16)
     except Exception as e:
         print(f"Font loading error: {e}")
-        font_name = font_huge_num = font_streak_num = font_banner = font_h2 = font_h3 = font_body = font_body_bold = font_badge = font_small = ImageFont.load_default()
+        font_name = font_huge_num = font_streak_num = font_banner = font_h2 = font_h3 = font_body = font_body_bold = font_badge = ImageFont.load_default()
 
-    # 3. Fetch Data from DB
+    # 3. Fetch Data from Database
     messages = media = words = night = voice = current_streak = longest_streak = 0
     supercoins = 0
     coin_name = "COINS"
     server_rank = 1
+    custom_badge_rows = []
 
     if bot.db_pool:
         async with bot.db_pool.acquire() as conn:
@@ -136,10 +144,16 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
             if coin_rec and coin_rec['coin_name']:
                 coin_name = coin_rec['coin_name'].upper()
 
+            # Configured Role Badges
+            custom_badge_rows = await conn.fetch(
+                "SELECT role_id, badge_label, badge_color FROM profile_badges WHERE guild_id = $1",
+                guild.id
+            )
+
     total_xp = (messages * 10) + (media * 25) + (voice * 5)
     level, cur_xp, next_xp, pct = get_level_data(total_xp)
 
-    # Calculate Title / Rank Banner
+    # Calculate Rank Banner Title
     if level >= 25:
         rank_banner_title = "SERVER TITAN"
     elif level >= 15:
@@ -151,7 +165,7 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     else:
         rank_banner_title = "THE NEWCOMER"
 
-    # Helper to paste icon
+    # Helper to paste icons
     def paste_icon(path, x, y, size=32):
         if os.path.exists(path):
             try:
@@ -166,7 +180,7 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
         guild_icon_task = fetch_guild_icon(guild, session)
         avatar_img, g_icon_img = await asyncio.gather(avatar_task, guild_icon_task)
 
-    # Paste Avatar into the glowing neon halo
+    # Paste Avatar into Halo
     av_r = 126
     av_center = (200, 240)
     avatar_img = avatar_img.resize((av_r * 2, av_r * 2))
@@ -180,43 +194,41 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     clean_name = format_clean_name(member, max_len=12)
     draw.text((360, 80), clean_name, fill=(255, 255, 255), font=font_name)
 
-    # VIP Member Plaque (Top Center)
+    # VIP Plaque
     paste_icon("assets/icons/crown.png", 670, 88, 38)
     draw.text((725, 84), "VIP", fill=(255, 215, 60), font=font_h2)
     draw.text((725, 114), "MEMBER", fill=(255, 220, 120), font=font_h3)
 
-    # Sublabel: Server Rank
-    sub_rank_label = f"— {coin_name} RANK —" if len(coin_name) < 14 else "— SERVER RANK —"
-    draw.text((530, 178), sub_rank_label, fill=(190, 160, 220), font=font_h3)
-
     # Purple Rank Banner
     paste_icon("assets/icons/trophy.png", 390, 222, 42)
     draw.text((455, 225), rank_banner_title, fill=(255, 255, 255), font=font_banner)
-    # Vector arrow
-    draw.polygon([(820, 235), (835, 245), (820, 255)], fill=(220, 160, 255, 240))
+    draw.polygon([(840, 235), (855, 245), (840, 255)], fill=(220, 160, 255, 240))
 
-    # Badges Bar (Dynamic detection)
+    # 6. Badges Bar (Custom configured roles OR Smart Fallbacks)
     badges = []
-    # Check Booster
-    if member.premium_since:
-        badges.append(("Booster", (180, 70, 255, 45), (200, 100, 255)))
-    # Check VIP
-    has_vip = any("vip" in r.name.lower() for r in member.roles) or member.guild_permissions.administrator
-    if has_vip:
-        badges.append(("VIP", (255, 190, 20, 45), (255, 200, 40)))
-    # Check Staff
-    if member.guild_permissions.manage_messages or member.guild_permissions.kick_members or member.guild_permissions.administrator:
-        badges.append(("Staff", (60, 120, 255, 45), (100, 160, 255)))
-    # Check Verified
-    if any("verified" in r.name.lower() for r in member.roles):
-        badges.append(("Verified", (0, 220, 120, 40), (0, 240, 140)))
-    # Check Content Creator / Creator
-    if any("creator" in r.name.lower() or "artist" in r.name.lower() for r in member.roles):
-        badges.append(("Creator", (255, 50, 60, 40), (255, 80, 90)))
-    # Check OG
-    if member.joined_at and (discord.utils.utcnow() - member.joined_at).days > 180:
-        badges.append(("OG", (255, 120, 30, 45), (255, 140, 40)))
-    
+    member_role_ids = {r.id for r in member.roles}
+
+    if custom_badge_rows:
+        for row in custom_badge_rows:
+            if row['role_id'] in member_role_ids:
+                c_name = row['badge_color'].lower() if row['badge_color'] else 'purple'
+                bg_col, b_col = COLOR_MAP.get(c_name, COLOR_MAP['purple'])
+                badges.append((row['badge_label'], bg_col, b_col))
+
+    # If no custom badges matched or none set, use smart defaults:
+    if not badges:
+        if member.premium_since:
+            badges.append(("Booster", (180, 70, 255, 50), (200, 100, 255)))
+        has_vip = any("vip" in r.name.lower() for r in member.roles) or member.guild_permissions.administrator
+        if has_vip:
+            badges.append(("VIP", (255, 190, 20, 50), (255, 200, 40)))
+        if member.guild_permissions.manage_messages or member.guild_permissions.kick_members or member.guild_permissions.administrator:
+            badges.append(("Staff", (60, 120, 255, 50), (100, 160, 255)))
+        if any("verified" in r.name.lower() for r in member.roles):
+            badges.append(("Verified", (0, 220, 120, 40), (0, 240, 140)))
+        if member.joined_at and (discord.utils.utcnow() - member.joined_at).days > 180:
+            badges.append(("OG", (255, 120, 30, 50), (255, 140, 40)))
+
     if not badges:
         badges.append(("Member", (100, 140, 200, 45), (140, 180, 240)))
 
@@ -224,13 +236,13 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     for b_label, bg_col, border_col in badges:
         tb = draw.textbbox((0, 0), b_label, font=font_badge)
         bw = (tb[2] - tb[0]) + 22
-        if cur_x + bw > 895:
+        if cur_x + bw > 880:
             break
         draw.rounded_rectangle([(cur_x, 325), (cur_x + bw, 360)], radius=12, fill=bg_col, outline=border_col, width=1)
         draw.text((cur_x + 11, 332), b_label, fill=(255, 255, 255), font=font_badge)
         cur_x += bw + 8
 
-    # 6. Top Right Server Identity Card
+    # 7. Top Right Server Identity Card
     if g_icon_img:
         g_icon_img = g_icon_img.resize((80, 80))
         g_mask = Image.new("L", (80, 80), 0)
@@ -244,7 +256,7 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     draw.text((1045, 82), server_title, fill=(255, 255, 255), font=ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 36))
     draw.text((1045, 130), "DISCORD SERVER", fill=(140, 170, 210), font=font_h3)
 
-    # 7. Streak & Leveling Card (Upper Right)
+    # 8. Streak & Leveling Card (Upper Right)
     paste_icon("assets/icons/fire.png", 950, 230, 34)
     draw.text((995, 236), "CURRENT STREAK", fill=(255, 180, 80), font=font_h3)
 
@@ -260,20 +272,18 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     draw.text((1110, 424), f"{cur_xp:,} / {next_xp:,} XP", fill=(180, 195, 215), font=font_body)
     draw.text((1355, 420), f"{int(pct * 100)}%", fill=(255, 220, 100), font=font_h2)
 
-    # Candy-Bar Progress Bar
+    # Striped Candy-Bar Progress Bar
     bar_box = [(950, 465), (1400, 493)]
     draw.rounded_rectangle(bar_box, radius=14, fill=(35, 38, 48, 255), outline=(255, 255, 255, 20), width=1)
     fill_w = max(int(450 * pct), 18)
     bar_fill = Image.new('RGBA', (fill_w, 28), (0, 0, 0, 0))
     bf_draw = ImageDraw.Draw(bar_fill)
     bf_draw.rounded_rectangle([(0, 0), (fill_w, 28)], radius=14, fill=(255, 170, 20, 240))
-    # Candy stripes
     for sx in range(-20, fill_w + 30, 16):
         bf_draw.line([(sx, 0), (sx + 14, 28)], fill=(255, 220, 90, 180), width=5)
     img.paste(bar_fill, (950, 465), bar_fill)
 
     draw.text((950, 515), f"Total Server XP: {total_xp:,}", fill=(160, 175, 195), font=font_body)
-
     draw.line([(950, 555), (1400, 555)], fill=(255, 255, 255, 40), width=1)
 
     # Boost Status
@@ -287,41 +297,44 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
         boost_desc = "Standard Member"
     draw.text((1000, 608), boost_desc, fill=(220, 225, 235), font=font_body)
 
-    # Favorite Channel
+    # Activity Status
     paste_icon("assets/icons/chat.png", 950, 645, 34)
-    draw.text((1000, 645), "ACTIVITY STATUS", fill=(140, 180, 255), font=font_h3)
-    draw.text((1000, 672), f"Active Member • {messages:,} msgs", fill=(220, 225, 235), font=font_body)
+    draw.text((1000, 645), "FAVORITE CHANNEL", fill=(140, 180, 255), font=font_h3)
+    draw.text((1000, 672), f"#general • {messages:,} messages", fill=(220, 225, 235), font=font_body)
 
-    # 8. Middle Stats Row
+    # 9. 4 Mid Row Tiles (Roomy, perfectly aligned)
     # Tile 1: Server Rank
     paste_icon("assets/icons/trophy.png", 55, 522, 38)
-    draw.text((105, 518), "SERVER RANK", fill=(255, 200, 50), font=font_h3)
+    draw.text((108, 518), "SERVER RANK", fill=(255, 200, 50), font=font_h3)
     total_m = guild.member_count or 100
-    draw.text((105, 548), f"#{server_rank} / {total_m:,} Members", fill=(255, 255, 255), font=font_body_bold)
+    draw.text((108, 548), f"#{server_rank} / {total_m:,} Members", fill=(255, 255, 255), font=font_body_bold)
 
     # Tile 2: Server Coins
-    paste_icon("assets/icons/coin.png", 375, 522, 38)
-    draw.text((425, 518), coin_name[:12], fill=(255, 200, 50), font=font_h3)
-    draw.text((425, 548), f"{supercoins:,} Coins", fill=(255, 255, 255), font=font_body_bold)
+    paste_icon("assets/icons/coin.png", 490, 522, 38)
+    draw.text((545, 518), coin_name[:12], fill=(255, 200, 50), font=font_h3)
+    draw.text((545, 548), f"{supercoins:,} Coins", fill=(255, 255, 255), font=font_body_bold)
 
-    # Tile 3: VIP Exclusive Banner
-    paste_icon("assets/icons/crown.png", 585, 522, 38)
-    draw.text((635, 518), "VIP  •  Exclusive Access", fill=(255, 210, 60), font=font_h3)
-    draw.text((635, 548), f"Thank you for supporting {guild.name[:12]}!", fill=(180, 195, 215), font=font_small)
-
-    # Tile 4: Member Since
+    # Tile 3: Member Since
     paste_icon("assets/icons/calendar.png", 55, 622, 38)
-    draw.text((105, 618), "MEMBER SINCE", fill=(180, 140, 255), font=font_h3)
+    draw.text((108, 618), "MEMBER SINCE", fill=(180, 140, 255), font=font_h3)
     join_str = member.joined_at.strftime("%b %d, %Y") if member.joined_at else "Recent"
-    draw.text((105, 648), f"Joined {guild.name[:10]} • {join_str}", fill=(255, 255, 255), font=font_body_bold)
+    draw.text((108, 648), f"Joined • {join_str}", fill=(255, 255, 255), font=font_body_bold)
 
-    # Tile 5: Reactions / Engagement
-    paste_icon("assets/icons/heart.png", 415, 622, 38)
-    draw.text((465, 618), "REACTIONS & ENGAGEMENT", fill=(255, 80, 110), font=font_h3)
+    # Tile 4: PRIME TIME (Replaced duplicate reactions!)
+    paste_icon("assets/icons/crown.png", 490, 622, 38)
+    draw.text((545, 618), "PRIME TIME", fill=(0, 220, 255), font=font_h3)
+    if night > (messages * 0.25) and night > 5:
+        prime_str = "Night Owl  •  11 PM - 3 AM"
+    elif voice > messages:
+        prime_str = "Voice Broadcaster"
+    else:
+        prime_str = "Active Chatter"
+    draw.text((545, 648), prime_str, fill=(255, 255, 255), font=font_body_bold)
+
+    # 10. Bottom 4 Bento Cards
     reactions_est = (words // 4) + messages
-    draw.text((465, 648), f"{reactions_est:,} Total Interactions Recorded", fill=(255, 255, 255), font=font_body_bold)
+    rcvd_est = int(reactions_est * 0.7)
 
-    # 9. Bottom 4 Neon Bento Cards
     # Card 1: Messages
     paste_icon("assets/icons/chat.png", 65, 750, 36)
     draw.text((112, 755), "MESSAGES", fill=(255, 190, 60), font=font_h3)
@@ -341,11 +354,11 @@ async def generate_neon_profile(bot, member: discord.Member, guild: discord.Guil
     draw.text((775, 810), v_str, fill=(255, 255, 255), font=font_huge_num)
     draw.text((775, 905), f"{voice:,} total minutes", fill=(170, 185, 205), font=font_body)
 
-    # Card 4: Reactions Given
+    # Card 4: Reactions Given & Received
     paste_icon("assets/icons/heart.png", 1130, 750, 36)
     draw.text((1177, 755), "REACTIONS", fill=(255, 90, 120), font=font_h3)
     draw.text((1130, 810), f"{reactions_est:,}", fill=(255, 255, 255), font=font_huge_num)
-    draw.text((1130, 905), "Given across channels", fill=(170, 185, 205), font=font_body)
+    draw.text((1130, 905), f"{reactions_est:,} Given • {rcvd_est:,} Recv", fill=(170, 185, 205), font=font_body)
 
     buffer = io.BytesIO()
     img.convert('RGB').save(buffer, format="PNG")
@@ -361,8 +374,6 @@ class ProfileCog(commands.Cog):
     @app_commands.describe(user="The member to view the profile for.")
     async def profile(self, interaction: discord.Interaction, user: discord.Member = None):
         target_member = user if user else interaction.user
-        
-        # Ensure we have member object with guild attributes
         if not isinstance(target_member, discord.Member):
             target_member = interaction.guild.get_member(target_member.id) or target_member
 
@@ -374,6 +385,90 @@ class ProfileCog(commands.Cog):
         except Exception as e:
             print(f"Neon profile generation error: {e}")
             await interaction.followup.send("❌ Failed to generate profile.")
+
+    # --- Configurable Role Badges Command Group ---
+    badge_group = app_commands.Group(name="badge", description="Configure which roles show as badges on user profiles.")
+
+    @badge_group.command(name="add", description="Add or update a role badge on the profile card.")
+    @app_commands.describe(
+        role="The Discord role to link to a badge.",
+        label="The badge label to display (e.g. VIP, Staff, OG).",
+        color="Badge accent color (Gold, Purple, Cyan, Green, Red, Blue, Orange)."
+    )
+    @app_commands.choices(color=[
+        app_commands.Choice(name="Gold", value="gold"),
+        app_commands.Choice(name="Purple", value="purple"),
+        app_commands.Choice(name="Cyan", value="cyan"),
+        app_commands.Choice(name="Green", value="green"),
+        app_commands.Choice(name="Red", value="red"),
+        app_commands.Choice(name="Blue", value="blue"),
+        app_commands.Choice(name="Orange", value="orange")
+    ])
+    @app_commands.checks.has_permissions(administrator=True)
+    async def badge_add(self, interaction: discord.Interaction, role: discord.Role, label: str, color: str = "purple"):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("❌ Database not connected.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO profile_badges (guild_id, role_id, badge_label, badge_color)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (guild_id, role_id) DO UPDATE SET
+                    badge_label = EXCLUDED.badge_label,
+                    badge_color = EXCLUDED.badge_color
+            """, interaction.guild.id, role.id, label[:20], color)
+
+        await interaction.response.send_message(
+            f"✅ **Badge Configured!** Members with {role.mention} will now display the badge `[{label}]` in `{color.title()}` on their `/profile` card."
+        )
+
+    @badge_group.command(name="remove", description="Remove a role badge from the profile card.")
+    @app_commands.describe(role="The Discord role badge to remove.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def badge_remove(self, interaction: discord.Interaction, role: discord.Role):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("❌ Database not connected.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as conn:
+            res = await conn.execute(
+                "DELETE FROM profile_badges WHERE guild_id = $1 AND role_id = $2",
+                interaction.guild.id, role.id
+            )
+
+        await interaction.response.send_message(f"🗑️ Removed badge for role {role.mention}.")
+
+    @badge_group.command(name="list", description="List all configured profile badges for this server.")
+    async def badge_list(self, interaction: discord.Interaction):
+        if not self.bot.db_pool:
+            await interaction.response.send_message("❌ Database not connected.", ephemeral=True)
+            return
+
+        async with self.bot.db_pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT role_id, badge_label, badge_color FROM profile_badges WHERE guild_id = $1",
+                interaction.guild.id
+            )
+
+        if not rows:
+            await interaction.response.send_message(
+                "ℹ️ No custom badges configured yet. The bot is currently using smart defaults (Booster, Staff, VIP, Verified, OG).\n"
+                "Use `/badge add` to add custom role badges!",
+                ephemeral=True
+            )
+            return
+
+        embed = discord.Embed(title="🛡️ Configured Profile Badges", color=discord.Color.gold())
+        lines = []
+        for r in rows:
+            role = interaction.guild.get_role(r['role_id'])
+            role_str = role.mention if role else f"Unknown Role ({r['role_id']})"
+            lines.append(f"• {role_str} ➔ `[{r['badge_label']}]` ({r['badge_color'].title()})")
+
+        embed.description = "\n".join(lines)
+        await interaction.response.send_message(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(ProfileCog(bot))

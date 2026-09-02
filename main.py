@@ -207,6 +207,14 @@ class GamesBot(commands.Bot):
                     last_active_date DATE,
                     PRIMARY KEY (user_id, guild_id)
                 );
+
+                CREATE TABLE IF NOT EXISTS profile_badges (
+                    guild_id BIGINT,
+                    role_id BIGINT,
+                    badge_label VARCHAR(32),
+                    badge_color VARCHAR(16) DEFAULT 'purple',
+                    PRIMARY KEY (guild_id, role_id)
+                );
             """)
             
             # Safely add the post_cost column to existing tables if they were created before this update
