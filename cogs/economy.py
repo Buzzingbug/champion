@@ -64,9 +64,8 @@ def render_bank_hud_card(
     channel_today: int,
     category_today: int,
     games_today: int,
-    messages_count: int,
-    media_count: int,
-    voice_hours: float
+    active_channels_today: int = 0,
+    active_categories_today: int = 0
 ) -> io.BytesIO:
     """Renders the glassmorphism digital banking HUD card with symmetric margins and high-DPI clarity."""
     img = get_base_template()
@@ -126,11 +125,27 @@ def render_bank_hud_card(
     today_badge = f"+{total_today:,} COINS" if total_today > 0 else "0 COINS"
     draw_text_glow(img, (content_r - 180, 334), today_badge, f_header_amt, fill=(57, 255, 160), glow_col=(57, 255, 160, 110), radius=6)
 
+    # Dynamic 100% daily subtitles (No confusing all-time lifetime stats!)
+    if channel_today > 0:
+        sub_channel = f"Rewarded in {active_channels_today} Channel{'s' if active_channels_today != 1 else ''} Today"
+    else:
+        sub_channel = "No channel rewards earned today"
+
+    if category_today > 0:
+        sub_category = f"Rewarded in {active_categories_today} Categor{'ies' if active_categories_today != 1 else 'y'} Today"
+    else:
+        sub_category = "No category rewards earned today"
+
+    if games_today > 0:
+        sub_games = f"Won from minigames & puzzles today"
+    else:
+        sub_games = "No minigame rewards won today"
+
     # 3. ACTIVITY ROWS (TALL 90px, 36px ICONS, CRISP ACCENTS)
     rows = [
-        ("assets/icons/chat.png", "Earned from Channels", f"{messages_count:,} Messages Logged", f"+{channel_today:,}", (0, 225, 255)),
-        ("assets/icons/media.png", "Earned from Categories", f"{media_count:,} Files Uploaded", f"+{category_today:,}", (220, 110, 255)),
-        ("assets/icons/trophy.png", "Earned from Games", f"{games_won:,} Games Won", f"+{games_today:,}", (255, 210, 70))
+        ("assets/icons/chat.png", "Earned from Channels", sub_channel, f"+{channel_today:,}", (0, 225, 255)),
+        ("assets/icons/media.png", "Earned from Categories", sub_category, f"+{category_today:,}", (220, 110, 255)),
+        ("assets/icons/trophy.png", "Earned from Games", sub_games, f"+{games_today:,}", (255, 210, 70))
     ]
 
     row_y = 388
@@ -251,30 +266,36 @@ class EconomyCog(commands.Cog):
                 if coin_record and coin_record['coin_name']:
                     coin_name = coin_record['coin_name']
 
-                # 4. Today's Channel & Category Earnings
+                # 4. Today's Channel & Category Earnings with active counts
+                active_channels_today = 0
                 chan_row = await connection.fetchrow(
-                    "SELECT COALESCE(SUM(earned_today), 0) as total FROM channel_earnings WHERE user_id = $1 AND date = CURRENT_DATE",
+                    """
+                    SELECT 
+                        COUNT(DISTINCT channel_id) as active_count, 
+                        COALESCE(SUM(earned_today), 0) as total 
+                    FROM channel_earnings 
+                    WHERE user_id = $1 AND date = CURRENT_DATE
+                    """,
                     target.id
                 )
                 if chan_row:
                     channel_today = int(chan_row['total'])
+                    active_channels_today = int(chan_row['active_count'] or 0)
 
+                active_categories_today = 0
                 cat_row = await connection.fetchrow(
-                    "SELECT COALESCE(SUM(earned_today), 0) as total FROM category_earnings WHERE user_id = $1 AND date = CURRENT_DATE",
+                    """
+                    SELECT 
+                        COUNT(DISTINCT category_id) as active_count, 
+                        COALESCE(SUM(earned_today), 0) as total 
+                    FROM category_earnings 
+                    WHERE user_id = $1 AND date = CURRENT_DATE
+                    """,
                     target.id
                 )
                 if cat_row:
                     category_today = int(cat_row['total'])
-
-                # 5. User Activity
-                act_row = await connection.fetchrow(
-                    "SELECT messages_sent, media_shared, voice_minutes FROM user_activity WHERE guild_id = $1 AND user_id = $2",
-                    guild.id, target.id
-                )
-                if act_row:
-                    messages_count = int(act_row['messages_sent'] or 0)
-                    media_count = int(act_row['media_shared'] or 0)
-                    voice_hours = round(float(act_row['voice_minutes'] or 0) / 60.0, 1)
+                    active_categories_today = int(cat_row['active_count'] or 0)
 
             # Render card in worker thread to prevent event loop blocking
             buf = await asyncio.to_thread(
@@ -286,9 +307,8 @@ class EconomyCog(commands.Cog):
                 channel_today=channel_today,
                 category_today=category_today,
                 games_today=games_today,
-                messages_count=messages_count,
-                media_count=media_count,
-                voice_hours=voice_hours
+                active_channels_today=active_channels_today,
+                active_categories_today=active_categories_today
             )
 
             file = discord.File(fp=buf, filename=f"bank_{target.id}.png")
