@@ -200,7 +200,7 @@ def render_bank_hud_card(
     draw.text((btn2_x + 58, btn_y + (btn_h - 24) // 2), f"GAMES WON: {games_won}", font=f_pill, fill=(255, 255, 255))
 
     buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
+    img.save(buf, format="WEBP", quality=92, method=4)
     buf.seek(0)
     return buf
 
@@ -311,7 +311,7 @@ class EconomyCog(commands.Cog):
                 active_categories_today=active_categories_today
             )
 
-            file = discord.File(fp=buf, filename=f"bank_{target.id}.png")
+            file = discord.File(fp=buf, filename=f"bank_{target.id}.webp")
             await interaction.followup.send(file=file)
 
         except Exception as e:

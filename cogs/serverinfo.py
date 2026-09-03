@@ -341,7 +341,7 @@ def render_serverinfo_hud_card(
         base_scaled.paste(circ_av, (scaled_cx - scaled_r, scaled_cy - scaled_r), circ_av)
         
         buf = io.BytesIO()
-        base_scaled.save(buf, format='PNG', optimize=True)
+        base_scaled.save(buf, format='WEBP', quality=92, method=4)
         del base_scaled
         buf.seek(0)
         return buf
@@ -511,7 +511,7 @@ class ServerInfoCog(commands.Cog):
                 initials=initials
             )
 
-            file_ext = "gif" if is_animated else "png"
+            file_ext = "gif" if is_animated else "webp"
             filename = f"serverinfo_{guild.id}.{file_ext}"
 
             await interaction.followup.send(file=discord.File(fp=buf, filename=filename))
