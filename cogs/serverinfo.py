@@ -88,28 +88,28 @@ def render_serverinfo_hud_card(
             img_dest.paste(ic, (x, y), ic)
 
     # Dynamic Title Font sizing to avoid overlap
-    title_size = 34
+    title_size = 36
     if len(guild_name) > 28:
-        title_size = 22
+        title_size = 24
     elif len(guild_name) > 20:
-        title_size = 26
+        title_size = 28
     elif len(guild_name) > 15:
-        title_size = 30
+        title_size = 32
 
     f_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", title_size)
-    f_h1 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 22)
-    f_h2 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 15)
-    f_h3 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 13)
-    f_body_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 12)
-    f_body_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 12)
-    f_sm_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 11)
-    f_sm_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 10)
-    f_micro_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 10)
-    f_micro_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 9)
+    f_h1 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 26)
+    f_h2 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 16)
+    f_h3 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 15)
+    f_body_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 13)
+    f_body_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 13)
+    f_sm_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 12)
+    f_sm_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 11)
+    f_micro_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 11)
+    f_micro_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 10)
 
     # 1. TOP-LEFT CONTAINER: OWNER CAPSULE
     paste_ic(card_base, "assets/icons/crown.png", 104, 281, 20)
-    draw.text((130, 284), f"OWNER: {owner_name[:18]}", fill=(255, 215, 60), font=f_h3)
+    draw.text((130, 283), f"OWNER: {owner_name[:18]}", fill=(255, 215, 60), font=f_body_b)
 
     # 2. BOTTOM-LEFT CONTAINER: 5 METRIC PILLS
     def draw_bullet(cx, cy, col, ic_path):
@@ -120,36 +120,36 @@ def render_serverinfo_hud_card(
 
     # Pill 1: Total Members (y=394)
     draw_bullet(80, 394, (0, 210, 255), "assets/icons/heart.png")
-    draw.text((104, 386), f"{total_members:,}", fill=(255, 255, 255), font=f_h3)
-    draw.text((156, 387), "Total Members", fill=(175, 195, 225), font=f_body_reg)
+    draw.text((104, 385), f"{total_members:,}", fill=(255, 255, 255), font=f_h3)
+    draw.text((160, 387), "Total Members", fill=(175, 195, 225), font=f_body_reg)
 
     # Pill 2: Humans (y=438)
     draw_bullet(80, 438, (0, 230, 140), "assets/icons/badge_vip.png")
     pct_humans = (human_members / total_members * 100) if total_members > 0 else 100.0
-    draw.text((104, 430), f"{human_members:,}", fill=(255, 255, 255), font=f_h3)
-    draw.text((156, 431), f"Humans ({pct_humans:.1f}%)", fill=(160, 230, 200), font=f_body_reg)
+    draw.text((104, 429), f"{human_members:,}", fill=(255, 255, 255), font=f_h3)
+    draw.text((160, 431), f"Humans ({pct_humans:.1f}%)", fill=(160, 230, 200), font=f_body_reg)
 
     # Pill 3: Bots (y=482)
     draw_bullet(80, 482, (210, 90, 255), "assets/icons/boost.png")
     pct_bots = (bot_members / total_members * 100) if total_members > 0 else 0.0
-    draw.text((104, 474), f"{bot_members:,}", fill=(255, 255, 255), font=f_h3)
-    draw.text((138, 475), f"Integrated Bots ({pct_bots:.1f}%)", fill=(215, 185, 255), font=f_body_reg)
+    draw.text((104, 473), f"{bot_members:,}", fill=(255, 255, 255), font=f_h3)
+    draw.text((142, 475), f"Integrated Bots ({pct_bots:.1f}%)", fill=(215, 185, 255), font=f_body_reg)
 
     # Pill 4: Channels (y=526)
     total_chans = text_channels + voice_channels
     draw_bullet(80, 526, (255, 195, 40), "assets/icons/chat.png")
-    draw.text((104, 518), f"{total_chans} Channels", fill=(255, 255, 255), font=f_h3)
-    draw.text((190, 519), f"• {text_channels} Text  {voice_channels} Voice", fill=(255, 210, 140), font=f_body_reg)
+    draw.text((104, 517), f"{total_chans} Channels", fill=(255, 255, 255), font=f_h3)
+    draw.text((196, 519), f"• {text_channels} Text  {voice_channels} Voice", fill=(255, 210, 140), font=f_body_reg)
 
     # Pill 5: Roles (y=570)
     draw_bullet(80, 570, (255, 80, 140), "assets/icons/trophy.png")
-    draw.text((104, 562), f"{roles_count} Roles", fill=(255, 255, 255), font=f_h3)
+    draw.text((104, 561), f"{roles_count} Roles", fill=(255, 255, 255), font=f_h3)
     clean_top = top_role_name[:16] if top_role_name else "None"
-    draw.text((166, 563), f"• Top: @{clean_top}", fill=(255, 190, 215), font=f_body_reg)
+    draw.text((172, 563), f"• Top: @{clean_top}", fill=(255, 190, 215), font=f_body_reg)
 
     # 3. TOP-RIGHT CONTAINER: HEADER & IDENTITY
     with Pilmoji(card_base) as pilmoji:
-        pilmoji.text((392, 66), guild_name, fill=(255, 255, 255), font=f_title)
+        pilmoji.text((392, 64), guild_name, fill=(255, 255, 255), font=f_title)
 
     paste_ic(card_base, "assets/icons/calendar.png", 394, 114, 18)
     draw.text((418, 115), f"Est. {created_str}", fill=(185, 205, 235), font=f_body_reg)
@@ -175,7 +175,7 @@ def render_serverinfo_hud_card(
     # Meta Capsule Row (Separated at y=190, NO overlap!)
     draw.rounded_rectangle([(392, 190), (950, 228)], radius=8, fill=(14, 18, 30, 160), outline=(0, 200, 255, 90), width=1)
     draw.text((406, 199), "GUILD ID:", fill=(130, 150, 185), font=f_sm_b)
-    draw.text((464, 199), str(guild_id), fill=(240, 245, 255), font=f_body_b)
+    draw.text((466, 199), str(guild_id), fill=(240, 245, 255), font=f_body_b)
 
     draw.text((615, 199), "REGION:", fill=(130, 150, 185), font=f_sm_b)
     draw.text((670, 199), region_str[:22], fill=(0, 215, 255), font=f_body_b)
@@ -190,10 +190,10 @@ def render_serverinfo_hud_card(
     draw.rounded_rectangle([(615, 290), (706, 310)], radius=6, fill=(0, 230, 140, 40), outline=(0, 240, 140, 180), width=1)
     draw.text((624, 293), max_tag, fill=(0, 240, 140), font=f_micro_b)
 
-    draw.text((388, 322), str(boost_count), fill=(255, 255, 255), font=f_h1)
-    draw.text((426, 326), "ACTIVE BOOSTERS", fill=(255, 205, 110), font=f_body_b)
+    draw.text((388, 320), str(boost_count), fill=(255, 255, 255), font=f_h1)
+    draw.text((430, 326), "ACTIVE BOOSTERS", fill=(255, 205, 110), font=f_body_b)
     unlocked_str = "• 100% Unlocked" if boost_tier >= 3 else f"• Tier {boost_tier}"
-    draw.text((565, 327), unlocked_str, fill=(175, 195, 225), font=f_sm_reg)
+    draw.text((570, 327), unlocked_str, fill=(175, 195, 225), font=f_sm_reg)
 
     perk_y = 368
     draw_glass_badge(388, perk_y, 74, 24, (160, 90, 240, 140), "assets/icons/media.png", "100MB", (225, 235, 255))
@@ -215,35 +215,39 @@ def render_serverinfo_hud_card(
     draw.text((414, 452), "SERVER PULSE & ACTIVITY", fill=(255, 90, 150), font=f_h2)
     draw.text((818, 454), "TOP 1% ACTIVE", fill=(0, 240, 140), font=f_sm_b)
 
-    draw.text((388, 482), f"{total_messages:,} Messages Logged", fill=(255, 255, 255), font=ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 20))
+    draw.text((388, 480), f"{total_messages:,} Messages Logged", fill=(255, 255, 255), font=ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 22))
     draw.text((388, 512), f"{voice_hours:,} Voice Hours Logged  •  {total_media:,} Media Shared  •  {coins_count:,} Economy Coins", fill=(175, 195, 225), font=f_body_reg)
 
     # 4 Bottom pre-rendered chips
     # Chip 1: Messages
     paste_ic(card_base, "assets/icons/chat.png", 400, 592, 16)
-    draw.text((428, 589), format_number(total_messages), fill=(255, 255, 255), font=f_sm_b)
+    draw.text((428, 588), format_number(total_messages), fill=(255, 255, 255), font=f_sm_b)
     draw.text((428, 603), "Messages", fill=(190, 175, 225), font=f_micro_reg)
 
     # Chip 2: Media Shared
     paste_ic(card_base, "assets/icons/media.png", 536, 592, 16)
-    draw.text((564, 589), format_number(total_media), fill=(255, 255, 255), font=f_sm_b)
+    draw.text((564, 588), format_number(total_media), fill=(255, 255, 255), font=f_sm_b)
     draw.text((564, 603), "Media Shared", fill=(175, 200, 235), font=f_micro_reg)
 
     # Chip 3: Voice Hours
     paste_ic(card_base, "assets/icons/voice.png", 678, 592, 16)
-    draw.text((706, 589), f"{format_number(voice_hours)}h", fill=(255, 255, 255), font=f_sm_b)
+    draw.text((706, 588), f"{format_number(voice_hours)}h", fill=(255, 255, 255), font=f_sm_b)
     draw.text((706, 603), "Voice Hours", fill=(170, 225, 205), font=f_micro_reg)
 
     # Chip 4: Economy Coins
     paste_ic(card_base, "assets/icons/coin.png", 838, 592, 16)
-    draw.text((868, 589), format_number(coins_count), fill=(255, 255, 255), font=f_sm_b)
+    draw.text((868, 588), format_number(coins_count), fill=(255, 255, 255), font=f_sm_b)
     draw.text((868, 603), "Coins Logged", fill=(225, 205, 170), font=f_micro_reg)
 
     # =====================================================================
-    # AVATAR COMPOSITING (STATIC vs ANIMATED GIF)
+    # AVATAR COMPOSITING & HIGH-DPI SCALING (ELIMINATES BOUNDARY VOID)
     # =====================================================================
     av_cx, av_cy, av_r = 196, 171, 91
     av_x, av_y = av_cx - av_r, av_cy - av_r
+
+    # Crop box tightly frames the glowing HUD chamfers with 10px breathing room
+    CROP_BOX = (38, 32, 986, 642)
+    TARGET_SCALE = 1.35  # Results in 1280 x 824 high-DPI output
 
     if avatar_frames and len(avatar_frames) > 1:
         gif_output_frames = []
@@ -255,7 +259,10 @@ def render_serverinfo_hud_card(
             f_composite = card_base.copy()
             circ_av = generate_avatar_circle(frame_raw, radius=av_r, initials=initials)
             f_composite.paste(circ_av, (av_x, av_y), circ_av)
-            p_frame = f_composite.convert('RGB').quantize(colors=128, method=Image.Quantize.FASTOCTREE)
+            f_cropped = f_composite.crop(CROP_BOX)
+            cw, ch = int(f_cropped.width * TARGET_SCALE), int(f_cropped.height * TARGET_SCALE)
+            f_scaled = f_cropped.resize((cw, ch), Image.Resampling.LANCZOS)
+            p_frame = f_scaled.convert('RGB').quantize(colors=128, method=Image.Quantize.FASTOCTREE)
             gif_output_frames.append(p_frame)
 
         buf = io.BytesIO()
@@ -274,8 +281,13 @@ def render_serverinfo_hud_card(
         single_frame = avatar_frames[0] if (avatar_frames and len(avatar_frames) > 0) else None
         circ_av = generate_avatar_circle(single_frame, radius=av_r, initials=initials)
         card_base.paste(circ_av, (av_x, av_y), circ_av)
+        
+        f_cropped = card_base.crop(CROP_BOX)
+        cw, ch = int(f_cropped.width * TARGET_SCALE), int(f_cropped.height * TARGET_SCALE)
+        final_card = f_cropped.resize((cw, ch), Image.Resampling.LANCZOS)
+
         buf = io.BytesIO()
-        card_base.save(buf, format='PNG', optimize=True)
+        final_card.save(buf, format='PNG', optimize=True)
         buf.seek(0)
         return buf
 
