@@ -148,6 +148,11 @@ class GamesBot(commands.Bot):
                     EXCEPTION
                         WHEN duplicate_column THEN NULL;
                     END;
+                    BEGIN
+                        ALTER TABLE economy ADD COLUMN games_won INT DEFAULT 0;
+                    EXCEPTION
+                        WHEN duplicate_column THEN NULL;
+                    END;
                 END $$;
 
                 CREATE TABLE IF NOT EXISTS category_configs (
