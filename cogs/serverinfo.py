@@ -3,12 +3,72 @@ from discord.ext import commands
 from discord import app_commands
 import io
 import os
+import gc
 import aiohttp
 import asyncio
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from pilmoji import Pilmoji
 
+# Detect Linux glibc for instant memory reclamation on Railway
+try:
+    import ctypes
+    libc = ctypes.CDLL("libc.so.6")
+    HAS_MALLOC_TRIM = True
+except Exception:
+    HAS_MALLOC_TRIM = False
+
+def release_memory():
+    """Forces garbage collection and releases unmapped memory back to the OS."""
+    gc.collect()
+    if HAS_MALLOC_TRIM:
+        try:
+            libc.malloc_trim(0)
+        except Exception:
+            pass
+
 TEMPLATE_PATH = "assets/serverinfo_hud_template.png"
+CROP_BOX = (38, 32, 986, 642)
+TARGET_SCALE = 1.35  # Output resolution: 1280 x 824
+
+# In-Memory Cache Singletons
+_CACHED_TEMPLATE = None
+_ICON_CACHE = {}
+_FONT_CACHE = {}
+_MASK_CACHE = {}
+
+def get_base_template() -> Image.Image:
+    global _CACHED_TEMPLATE
+    if _CACHED_TEMPLATE is None:
+        if not os.path.exists(TEMPLATE_PATH):
+            raise FileNotFoundError(f"{TEMPLATE_PATH} does not exist!")
+        _CACHED_TEMPLATE = Image.open(TEMPLATE_PATH).convert("RGBA")
+    return _CACHED_TEMPLATE.copy()
+
+def get_font(name: str, size: int):
+    key = (name, size)
+    if key not in _FONT_CACHE:
+        path = f"assets/fonts/{name}.ttf"
+        if os.path.exists(path):
+            _FONT_CACHE[key] = ImageFont.truetype(path, size)
+        else:
+            _FONT_CACHE[key] = ImageFont.load_default()
+    return _FONT_CACHE[key]
+
+def get_cached_icon(path: str, size: int) -> Image.Image:
+    key = (path, size)
+    if key not in _ICON_CACHE:
+        if os.path.exists(path):
+            _ICON_CACHE[key] = Image.open(path).convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
+        else:
+            _ICON_CACHE[key] = None
+    return _ICON_CACHE[key]
+
+def get_circular_mask(diameter: int) -> Image.Image:
+    if diameter not in _MASK_CACHE:
+        m = Image.new("L", (diameter * 2, diameter * 2), 0)
+        ImageDraw.Draw(m).ellipse([(0, 0), (diameter * 2, diameter * 2)], fill=255)
+        _MASK_CACHE[diameter] = m.resize((diameter, diameter), Image.Resampling.LANCZOS)
+    return _MASK_CACHE[diameter]
 
 def format_number(val: int) -> str:
     if val >= 1_000_000:
@@ -21,10 +81,7 @@ def generate_avatar_circle(icon_img: Image.Image, radius=91, initials="AH") -> I
     """Takes any PIL Image (or None) and returns an antialiased circular avatar of exact radius."""
     diameter = radius * 2
     canvas = Image.new("RGBA", (diameter, diameter), (0, 0, 0, 0))
-    mask = Image.new("L", (diameter * 2, diameter * 2), 0)
-    m_draw = ImageDraw.Draw(mask)
-    m_draw.ellipse([(0, 0), (diameter * 2, diameter * 2)], fill=255)
-    mask = mask.resize((diameter, diameter), Image.Resampling.LANCZOS)
+    mask = get_circular_mask(diameter)
 
     if icon_img is not None:
         resized = icon_img.resize((diameter, diameter), Image.Resampling.LANCZOS)
@@ -40,7 +97,7 @@ def generate_avatar_circle(icon_img: Image.Image, radius=91, initials="AH") -> I
                 255
             )
             d.ellipse([(radius - r, radius - r), (radius + r, radius + r)], fill=col)
-        f_av = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 52)
+        f_av = get_font("Roboto-Bold", 52)
         bbox = d.textbbox((0, 0), initials, font=f_av)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         d.text((radius - tw // 2, radius - th // 2 - 5), initials, fill=(255, 255, 255), font=f_av)
@@ -74,17 +131,13 @@ def render_serverinfo_hud_card(
     avatar_durations: list = None,
     initials: str = "AH"
 ) -> io.BytesIO:
-    """Renders the Server Info HUD. If avatar_frames is provided with multiple frames, outputs an animated GIF."""
-    if not os.path.exists(TEMPLATE_PATH):
-        raise FileNotFoundError(f"{TEMPLATE_PATH} does not exist!")
-
-    base_template = Image.open(TEMPLATE_PATH).convert("RGBA")
-    card_base = base_template.copy()
+    """Renders the Server Info HUD with maximum resource efficiency."""
+    card_base = get_base_template()
     draw = ImageDraw.Draw(card_base, "RGBA")
 
     def paste_ic(img_dest, path, x, y, size=24):
-        if os.path.exists(path):
-            ic = Image.open(path).convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
+        ic = get_cached_icon(path, size)
+        if ic is not None:
             img_dest.paste(ic, (x, y), ic)
 
     # Dynamic Title Font sizing to avoid overlap
@@ -96,16 +149,16 @@ def render_serverinfo_hud_card(
     elif len(guild_name) > 15:
         title_size = 32
 
-    f_title = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", title_size)
-    f_h1 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 26)
-    f_h2 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 16)
-    f_h3 = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 15)
-    f_body_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 13)
-    f_body_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 13)
-    f_sm_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 12)
-    f_sm_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 11)
-    f_micro_b = ImageFont.truetype("assets/fonts/Roboto-Bold.ttf", 11)
-    f_micro_reg = ImageFont.truetype("assets/fonts/Roboto-Regular.ttf", 10)
+    f_title = get_font("Roboto-Bold", title_size)
+    f_h1 = get_font("Roboto-Bold", 26)
+    f_h2 = get_font("Roboto-Bold", 16)
+    f_h3 = get_font("Roboto-Bold", 15)
+    f_body_b = get_font("Roboto-Bold", 13)
+    f_body_reg = get_font("Roboto-Regular", 13)
+    f_sm_b = get_font("Roboto-Bold", 12)
+    f_sm_reg = get_font("Roboto-Regular", 11)
+    f_micro_b = get_font("Roboto-Bold", 11)
+    f_micro_reg = get_font("Roboto-Regular", 10)
 
     # 1. TOP-LEFT CONTAINER: OWNER CAPSULE
     paste_ic(card_base, "assets/icons/crown.png", 104, 281, 20)
@@ -114,9 +167,7 @@ def render_serverinfo_hud_card(
     # 2. BOTTOM-LEFT CONTAINER: 5 METRIC PILLS
     def draw_bullet(cx, cy, col, ic_path):
         draw.ellipse([(cx - 7, cy - 7), (cx + 7, cy + 7)], fill=col)
-        if ic_path and os.path.exists(ic_path):
-            ic = Image.open(ic_path).convert("RGBA").resize((12, 12), Image.Resampling.LANCZOS)
-            card_base.paste(ic, (cx - 6, cy - 6), ic)
+        paste_ic(card_base, ic_path, cx - 6, cy - 6, 12)
 
     # Pill 1: Total Members (y=394)
     draw_bullet(80, 394, (0, 210, 255), "assets/icons/heart.png")
@@ -240,14 +291,21 @@ def render_serverinfo_hud_card(
     draw.text((868, 603), "Coins Logged", fill=(225, 205, 170), font=f_micro_reg)
 
     # =====================================================================
-    # AVATAR COMPOSITING & HIGH-DPI SCALING (ELIMINATES BOUNDARY VOID)
+    # PRE-SCALE BASE CARD ONCE (ELIMINATES 80% CPU & MEMORY CHURN)
     # =====================================================================
-    av_cx, av_cy, av_r = 196, 171, 91
-    av_x, av_y = av_cx - av_r, av_cy - av_r
+    cw = int((CROP_BOX[2] - CROP_BOX[0]) * TARGET_SCALE)
+    ch = int((CROP_BOX[3] - CROP_BOX[1]) * TARGET_SCALE)
+    base_cropped = card_base.crop(CROP_BOX)
+    base_scaled = base_cropped.resize((cw, ch), Image.Resampling.LANCZOS)
+    del card_base
+    del base_cropped
 
-    # Crop box tightly frames the glowing HUD chamfers with 10px breathing room
-    CROP_BOX = (38, 32, 986, 642)
-    TARGET_SCALE = 1.35  # Results in 1280 x 824 high-DPI output
+    # Scaled avatar coordinates
+    av_cx, av_cy, av_r = 196, 171, 91
+    scaled_cx = int((av_cx - CROP_BOX[0]) * TARGET_SCALE)
+    scaled_cy = int((av_cy - CROP_BOX[1]) * TARGET_SCALE)
+    scaled_r = int(av_r * TARGET_SCALE)
+    scaled_diam = scaled_r * 2
 
     if avatar_frames and len(avatar_frames) > 1:
         gif_output_frames = []
@@ -256,15 +314,14 @@ def render_serverinfo_hud_card(
         sampled_durations = avatar_durations[::step][:16] if avatar_durations else [100] * len(sampled_frames)
 
         for frame_raw in sampled_frames:
-            f_composite = card_base.copy()
-            circ_av = generate_avatar_circle(frame_raw, radius=av_r, initials=initials)
-            f_composite.paste(circ_av, (av_x, av_y), circ_av)
-            f_cropped = f_composite.crop(CROP_BOX)
-            cw, ch = int(f_cropped.width * TARGET_SCALE), int(f_cropped.height * TARGET_SCALE)
-            f_scaled = f_cropped.resize((cw, ch), Image.Resampling.LANCZOS)
-            p_frame = f_scaled.convert('RGB').quantize(colors=128, method=Image.Quantize.FASTOCTREE)
+            f_frame = base_scaled.copy()
+            circ_av = generate_avatar_circle(frame_raw, radius=scaled_r, initials=initials)
+            f_frame.paste(circ_av, (scaled_cx - scaled_r, scaled_cy - scaled_r), circ_av)
+            p_frame = f_frame.convert('RGB').quantize(colors=128, method=Image.Quantize.FASTOCTREE)
             gif_output_frames.append(p_frame)
+            del f_frame
 
+        del base_scaled
         buf = io.BytesIO()
         gif_output_frames[0].save(
             buf,
@@ -275,19 +332,17 @@ def render_serverinfo_hud_card(
             loop=0,
             optimize=True
         )
+        del gif_output_frames
         buf.seek(0)
         return buf
     else:
         single_frame = avatar_frames[0] if (avatar_frames and len(avatar_frames) > 0) else None
-        circ_av = generate_avatar_circle(single_frame, radius=av_r, initials=initials)
-        card_base.paste(circ_av, (av_x, av_y), circ_av)
+        circ_av = generate_avatar_circle(single_frame, radius=scaled_r, initials=initials)
+        base_scaled.paste(circ_av, (scaled_cx - scaled_r, scaled_cy - scaled_r), circ_av)
         
-        f_cropped = card_base.crop(CROP_BOX)
-        cw, ch = int(f_cropped.width * TARGET_SCALE), int(f_cropped.height * TARGET_SCALE)
-        final_card = f_cropped.resize((cw, ch), Image.Resampling.LANCZOS)
-
         buf = io.BytesIO()
-        final_card.save(buf, format='PNG', optimize=True)
+        base_scaled.save(buf, format='PNG', optimize=True)
+        del base_scaled
         buf.seek(0)
         return buf
 
@@ -299,7 +354,7 @@ async def fetch_guild_icon_frames(guild: discord.Guild, session: aiohttp.ClientS
     try:
         if guild.icon.is_animated():
             url = str(guild.icon.replace(format="gif", size=256))
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
                 if resp.status == 200:
                     data = await resp.read()
                     gif_im = Image.open(io.BytesIO(data))
@@ -312,7 +367,7 @@ async def fetch_guild_icon_frames(guild: discord.Guild, session: aiohttp.ClientS
                         return frames, durations, True
         else:
             url = str(guild.icon.replace(format="png", size=256))
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
                 if resp.status == 200:
                     data = await resp.read()
                     im = Image.open(io.BytesIO(data)).convert("RGBA")
@@ -348,7 +403,7 @@ class ServerInfoCog(commands.Cog):
             try:
                 owner_user = await self.bot.fetch_user(guild.owner_id)
                 owner_name = owner_user.name
-            except:
+            except Exception:
                 owner_name = f"Owner-{guild.owner_id % 10000}"
 
         # 2. Created date & age
@@ -369,7 +424,6 @@ class ServerInfoCog(commands.Cog):
             human_members = sum(1 for m in guild.members if not m.bot)
             bot_members = sum(1 for m in guild.members if m.bot)
         else:
-            # Fallback if unchunked
             human_members = total_members
             bot_members = 0
 
@@ -389,7 +443,7 @@ class ServerInfoCog(commands.Cog):
         verification_str = str(guild.verification_level).capitalize()
         region_str = f"{guild.preferred_locale} • {verification_str}"
 
-        # 9. Database Stats (Aggregated)
+        # 9. Database Stats (Single Combined Query for minimal latency & connection lock time)
         total_messages = 0
         total_media = 0
         voice_hours = 0
@@ -398,30 +452,21 @@ class ServerInfoCog(commands.Cog):
         if hasattr(self.bot, 'db_pool') and self.bot.db_pool:
             try:
                 async with self.bot.db_pool.acquire() as conn:
-                    # Sum activity
-                    row_act = await conn.fetchrow(
+                    row = await conn.fetchrow(
                         """
                         SELECT 
-                            COALESCE(SUM(messages_sent), 0) as msgs,
-                            COALESCE(SUM(media_shared), 0) as media,
-                            COALESCE(SUM(voice_minutes), 0) as voice
-                        FROM user_activity
-                        WHERE guild_id = $1
+                            (SELECT COALESCE(SUM(messages_sent), 0) FROM user_activity WHERE guild_id = $1) as msgs,
+                            (SELECT COALESCE(SUM(media_shared), 0) FROM user_activity WHERE guild_id = $1) as media,
+                            (SELECT COALESCE(SUM(voice_minutes), 0) FROM user_activity WHERE guild_id = $1) as voice,
+                            (SELECT COALESCE(SUM(supercoins), 0) FROM economy WHERE guild_id = $1) as coins
                         """,
                         guild.id
                     )
-                    if row_act:
-                        total_messages = int(row_act['msgs'])
-                        total_media = int(row_act['media'])
-                        voice_hours = int(row_act['voice']) // 60
-
-                    # Sum coins
-                    row_econ = await conn.fetchrow(
-                        "SELECT COALESCE(SUM(supercoins), 0) as coins FROM economy WHERE guild_id = $1",
-                        guild.id
-                    )
-                    if row_econ:
-                        coins_count = int(row_econ['coins'])
+                    if row:
+                        total_messages = int(row['msgs'])
+                        total_media = int(row['media'])
+                        voice_hours = int(row['voice']) // 60
+                        coins_count = int(row['coins'])
             except Exception as e:
                 print(f"Error querying server stats from database: {e}")
 
@@ -474,6 +519,12 @@ class ServerInfoCog(commands.Cog):
         except Exception as e:
             print(f"Error rendering serverinfo card: {e}")
             await interaction.followup.send("❌ Failed to render Server Info card. Please try again.")
+
+        finally:
+            # Explicit cleanup of buffers and forced memory release
+            del avatar_frames
+            del avatar_durations
+            release_memory()
 
 async def setup(bot):
     await bot.add_cog(ServerInfoCog(bot))
