@@ -222,36 +222,13 @@ class GamesBot(commands.Bot):
                 );
             """)
             
-            # Safely add the post_cost column to existing tables if they were created before this update
-            try:
-                await connection.execute("ALTER TABLE server_configs ADD COLUMN post_cost INT DEFAULT 0;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
-                
-            try:
-                await connection.execute("ALTER TABLE kfm_configs ADD COLUMN post_cost INT DEFAULT 0;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
-                
-            try:
-                await connection.execute("ALTER TABLE rol_configs ADD COLUMN post_cost INT DEFAULT 0;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
-                
-            try:
-                await connection.execute("ALTER TABLE category_configs ADD COLUMN notify BOOLEAN DEFAULT TRUE;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
-                
-            try:
-                await connection.execute("ALTER TABLE channel_reward_configs ADD COLUMN notify BOOLEAN DEFAULT TRUE;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
-                
-            try:
-                await connection.execute("ALTER TABLE active_puzzles ADD COLUMN image_data BYTEA;")
-            except asyncpg.exceptions.DuplicateColumnError:
-                pass
+            # Safely ensure columns exist without generating PostgreSQL duplicate column errors in logs
+            await connection.execute("ALTER TABLE server_configs ADD COLUMN IF NOT EXISTS post_cost INT DEFAULT 0;")
+            await connection.execute("ALTER TABLE kfm_configs ADD COLUMN IF NOT EXISTS post_cost INT DEFAULT 0;")
+            await connection.execute("ALTER TABLE rol_configs ADD COLUMN IF NOT EXISTS post_cost INT DEFAULT 0;")
+            await connection.execute("ALTER TABLE category_configs ADD COLUMN IF NOT EXISTS notify BOOLEAN DEFAULT TRUE;")
+            await connection.execute("ALTER TABLE channel_reward_configs ADD COLUMN IF NOT EXISTS notify BOOLEAN DEFAULT TRUE;")
+            await connection.execute("ALTER TABLE active_puzzles ADD COLUMN IF NOT EXISTS image_data BYTEA;")
                 
             print("Database tables verified/created.")
 
