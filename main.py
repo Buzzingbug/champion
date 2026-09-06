@@ -229,6 +229,28 @@ class GamesBot(commands.Bot):
             await connection.execute("ALTER TABLE category_configs ADD COLUMN IF NOT EXISTS notify BOOLEAN DEFAULT TRUE;")
             await connection.execute("ALTER TABLE channel_reward_configs ADD COLUMN IF NOT EXISTS notify BOOLEAN DEFAULT TRUE;")
             await connection.execute("ALTER TABLE active_puzzles ADD COLUMN IF NOT EXISTS image_data BYTEA;")
+
+            # Automatically sync and link all historical channel and category earnings with economy balance
+            try:
+                await connection.execute("""
+                    UPDATE economy e
+                    SET lifetime_channel = GREATEST(
+                        COALESCE(e.lifetime_channel, 0),
+                        COALESCE((SELECT SUM(earned_today) FROM channel_earnings c WHERE c.user_id = e.user_id), 0)
+                    );
+                    
+                    UPDATE economy e
+                    SET lifetime_category = GREATEST(
+                        COALESCE(e.lifetime_category, 0),
+                        COALESCE((SELECT SUM(earned_today) FROM category_earnings c WHERE c.user_id = e.user_id), 0)
+                    );
+                    
+                    UPDATE economy
+                    SET supercoins = GREATEST(supercoins, COALESCE(lifetime_channel, 0) + COALESCE(lifetime_category, 0) + COALESCE(lifetime_games, 0))
+                    WHERE supercoins < (COALESCE(lifetime_channel, 0) + COALESCE(lifetime_category, 0) + COALESCE(lifetime_games, 0));
+                """)
+            except Exception as e:
+                print(f"Notice: Economy auto-sync skipped: {e}")
                 
             print("Database tables verified/created.")
 

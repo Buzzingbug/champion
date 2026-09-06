@@ -65,7 +65,10 @@ def render_bank_hud_card(
     category_today: int,
     games_today: int,
     active_channels_today: int = 0,
-    active_categories_today: int = 0
+    active_categories_today: int = 0,
+    lifetime_channel: int = 0,
+    lifetime_category: int = 0,
+    lifetime_games: int = 0
 ) -> io.BytesIO:
     """Renders the glassmorphism digital banking HUD card with symmetric margins and high-DPI clarity."""
     img = get_base_template()
@@ -85,8 +88,8 @@ def render_bank_hud_card(
     f_h2 = get_font(28)
     f_header_amt = get_font(26)
     f_row_title = get_font(24)
-    f_row_sub = get_font(16)
-    f_row_amt = get_font(32)
+    f_row_sub = get_font(15)
+    f_row_amt = get_font(30)
     f_pill = get_font(20)
     f_caption = get_font(15)
 
@@ -118,34 +121,42 @@ def render_bank_hud_card(
     # Divider Line
     draw.line([(content_x, 310), (content_r, 310)], fill=(255, 255, 255, 45), width=1)
 
-    # 2. TODAY'S EARNINGS HEADER
-    draw.text((content_x, 332), "TODAY'S ACTIVITY", font=f_h2, fill=(255, 255, 255, 250))
+    # 2. REWARD BREAKDOWN HEADER
+    draw.text((content_x, 334), "REWARD BREAKDOWN", font=f_h2, fill=(255, 255, 255, 250))
 
     total_today = channel_today + category_today + games_today
-    today_badge = f"+{total_today:,} COINS" if total_today > 0 else "0 COINS"
-    draw_text_glow(img, (content_r - 180, 334), today_badge, f_header_amt, fill=(57, 255, 160), glow_col=(57, 255, 160, 110), radius=6)
+    today_badge = f"+{total_today:,} TODAY" if total_today > 0 else "0 TODAY"
+    badge_bbox = draw.textbbox((0, 0), today_badge, font=f_header_amt)
+    badge_w = badge_bbox[2] - badge_bbox[0]
+    draw_text_glow(img, (content_r - badge_w, 336), today_badge, f_header_amt, fill=(57, 255, 160), glow_col=(57, 255, 160, 110), radius=6)
 
-    # Dynamic 100% daily subtitles (No confusing all-time lifetime stats!)
+    # Dynamic all-time & today subtitles linking category and channel coins!
     if channel_today > 0:
-        sub_channel = f"Rewarded in {active_channels_today} Channel{'s' if active_channels_today != 1 else ''} Today"
+        sub_channel = f"{lifetime_channel:,} All-Time • (+{channel_today:,} today)"
+    elif lifetime_channel > 0:
+        sub_channel = f"{lifetime_channel:,} All-Time Channel Rewards"
     else:
-        sub_channel = "No channel rewards earned today"
+        sub_channel = "No channel rewards earned yet"
 
     if category_today > 0:
-        sub_category = f"Rewarded in {active_categories_today} Categor{'ies' if active_categories_today != 1 else 'y'} Today"
+        sub_category = f"{lifetime_category:,} All-Time • (+{category_today:,} today)"
+    elif lifetime_category > 0:
+        sub_category = f"{lifetime_category:,} All-Time Category Rewards"
     else:
-        sub_category = "No category rewards earned today"
+        sub_category = "No category rewards earned yet"
 
     if games_today > 0:
-        sub_games = f"Won from minigames & puzzles today"
+        sub_games = f"{lifetime_games:,} All-Time • (+{games_today:,} today)"
+    elif lifetime_games > 0:
+        sub_games = f"{lifetime_games:,} All-Time Game Winnings"
     else:
-        sub_games = "No minigame rewards won today"
+        sub_games = "No minigame rewards won yet"
 
     # 3. ACTIVITY ROWS (TALL 90px, 36px ICONS, CRISP ACCENTS)
     rows = [
-        ("assets/icons/chat.png", "Earned from Channels", sub_channel, f"+{channel_today:,}", (0, 225, 255)),
-        ("assets/icons/media.png", "Earned from Categories", sub_category, f"+{category_today:,}", (220, 110, 255)),
-        ("assets/icons/trophy.png", "Earned from Games", sub_games, f"+{games_today:,}", (255, 210, 70))
+        ("assets/icons/chat.png", "Earned from Channels", sub_channel, f"{lifetime_channel:,}", (0, 225, 255)),
+        ("assets/icons/media.png", "Earned from Categories", sub_category, f"{lifetime_category:,}", (220, 110, 255)),
+        ("assets/icons/trophy.png", "Earned from Games", sub_games, f"{lifetime_games:,}", (255, 210, 70))
     ]
 
     row_y = 388
@@ -227,6 +238,8 @@ class EconomyCog(commands.Cog):
         server_rank = 1
         games_won = 0
         lifetime_games = 0
+        lifetime_channel = 0
+        lifetime_category = 0
         coin_name = "Supercoins"
         channel_today = 0
         category_today = 0
@@ -242,13 +255,51 @@ class EconomyCog(commands.Cog):
                     "SELECT supercoins, lifetime_channel, lifetime_category, lifetime_games, games_won FROM economy WHERE guild_id = $1 AND user_id = $2",
                     guild.id, target.id
                 )
-                if econ:
-                    balance = int(econ['supercoins'] or 0)
-                    lifetime_games = int(econ['lifetime_games'] or 0)
-                    if econ['games_won'] is not None:
-                        games_won = int(econ['games_won'])
-                    else:
-                        games_won = max(0, lifetime_games // 100)
+                supercoins = int(econ['supercoins'] or 0) if econ else 0
+                lifetime_channel = int(econ['lifetime_channel'] or 0) if econ else 0
+                lifetime_category = int(econ['lifetime_category'] or 0) if econ else 0
+                lifetime_games = int(econ['lifetime_games'] or 0) if econ else 0
+                if econ and econ['games_won'] is not None:
+                    games_won = int(econ['games_won'])
+                else:
+                    games_won = max(0, lifetime_games // 100)
+
+                # Fetch historical totals from channel_earnings & category_earnings
+                chan_hist_row = await connection.fetchrow(
+                    "SELECT COALESCE(SUM(earned_today), 0) as total FROM channel_earnings WHERE user_id = $1",
+                    target.id
+                )
+                chan_hist = int(chan_hist_row['total']) if chan_hist_row else 0
+
+                cat_hist_row = await connection.fetchrow(
+                    "SELECT COALESCE(SUM(earned_today), 0) as total FROM category_earnings WHERE user_id = $1",
+                    target.id
+                )
+                cat_hist = int(cat_hist_row['total']) if cat_hist_row else 0
+
+                # Ensure lifetime metrics reflect all recorded channel & category earnings
+                lifetime_channel = max(lifetime_channel, chan_hist)
+                lifetime_category = max(lifetime_category, cat_hist)
+
+                # Link total balance to include all channel, category, and game earnings
+                total_earned = lifetime_channel + lifetime_category + lifetime_games
+                balance = max(supercoins, total_earned)
+
+                # Auto-sync back to economy table if missing or behind
+                if econ is None or supercoins < balance or int(econ['lifetime_channel'] or 0) < lifetime_channel or int(econ['lifetime_category'] or 0) < lifetime_category:
+                    await connection.execute(
+                        """
+                        INSERT INTO economy (guild_id, user_id, supercoins, lifetime_channel, lifetime_category, lifetime_games, games_won)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        ON CONFLICT (guild_id, user_id)
+                        DO UPDATE SET 
+                            supercoins = GREATEST(economy.supercoins, $3),
+                            lifetime_channel = GREATEST(COALESCE(economy.lifetime_channel, 0), $4),
+                            lifetime_category = GREATEST(COALESCE(economy.lifetime_category, 0), $5),
+                            lifetime_games = GREATEST(COALESCE(economy.lifetime_games, 0), $6)
+                        """,
+                        guild.id, target.id, balance, lifetime_channel, lifetime_category, lifetime_games, games_won
+                    )
 
                 # 2. Server Rank
                 rank_row = await connection.fetchrow(
@@ -308,7 +359,10 @@ class EconomyCog(commands.Cog):
                 category_today=category_today,
                 games_today=games_today,
                 active_channels_today=active_channels_today,
-                active_categories_today=active_categories_today
+                active_categories_today=active_categories_today,
+                lifetime_channel=lifetime_channel,
+                lifetime_category=lifetime_category,
+                lifetime_games=lifetime_games
             )
 
             file = discord.File(fp=buf, filename=f"bank_{target.id}.webp")
