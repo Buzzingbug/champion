@@ -159,8 +159,8 @@ class WeeklyWinnersCog(commands.Cog):
                     "rol_votes", dash['rol_msg'], dash['rol_prize'], "Left or Right", discord.Color.blue()
                 )
 
-                if not manual_guild_id:
-                    await connection.execute("UPDATE weekly_dashboards SET last_posted = $1 WHERE guild_id = $2", today, guild_id)
+                # Always record last_posted to prevent double execution
+                await connection.execute("UPDATE weekly_dashboards SET last_posted = $1 WHERE guild_id = $2", today, guild_id)
 
     async def _process_game_winner(self, connection, guild, channel, min_snowflake, table_name, custom_msg, prize, title, color, vote_filter=None):
         # Find the message with the highest votes in the last 7 days
@@ -230,51 +230,76 @@ class WeeklyWinnersCog(commands.Cog):
 
         # Format Custom Message
         prize = prize or 0
-        default_msg = f"🏆 Congratulations {{user}}! You won the {title} weekly prize of **{prize} coins** with {vote_count} votes!"
+        coin_record = await connection.fetchrow(
+            "SELECT coin_name FROM server_settings WHERE guild_id = $1", guild.id
+        )
+        coin_name = coin_record['coin_name'] if coin_record and coin_record['coin_name'] else 'Supercoins'
+
+        default_msg = f"🏆 Congratulations {{user}}! You won the {title} weekly prize of **{prize:,} {coin_name}** with {vote_count:,} votes!"
         display_msg = (custom_msg or default_msg).replace("{user}", author_mention)
 
-        # Deposit Prize
+        # Deposit Prize & Increment games_won counter
         if prize > 0:
             await connection.execute(
                 """
-                INSERT INTO economy (guild_id, user_id, supercoins, lifetime_games) 
-                VALUES ($1, $2, $3, $3)
+                INSERT INTO economy (guild_id, user_id, supercoins, lifetime_games, games_won) 
+                VALUES ($1, $2, $3, $3, 1)
                 ON CONFLICT (guild_id, user_id) 
-                DO UPDATE SET supercoins = economy.supercoins + $3, lifetime_games = economy.lifetime_games + $3
+                DO UPDATE SET 
+                    supercoins = economy.supercoins + $3, 
+                    lifetime_games = economy.lifetime_games + $3,
+                    games_won = COALESCE(economy.games_won, 0) + 1
                 """,
                 guild.id, author_id, prize
             )
 
-        # Send Showcase Embed
-        embed = discord.Embed(
-            title=f"👑 {title} Weekly Winner!",
-            description=display_msg,
-            color=color
-        )
-        if image_url:
-            embed.set_image(url=image_url)
-        
-        embed.set_footer(text=f"Total Votes: {vote_count}")
-
+        # 1. Update the original WINNING post in the submit channel into the Gold Winner Trophy
         try:
-            await channel.send(embed=embed)
+            win_embed = msg.embeds[0] if msg.embeds else discord.Embed()
+            win_embed.title = f"👑 {title.upper()} — WINNER OF THE WEEK!"
+            win_embed.description = (
+                f"🏆 **WINNING SUBMISSION**\n\n"
+                f"Congratulations {author_mention}!\n"
+                f"You won this week's **{title}** with **{vote_count:,} votes** and earned **{prize:,} {coin_name}**!\n\n"
+                f"🔒 **Voting Closed**"
+            )
+            win_embed.color = discord.Color.gold()
+            win_embed.set_footer(text=f"👑 Weekly Winner • Total Votes: {vote_count:,}")
+            await msg.edit(embed=win_embed, view=None)
         except Exception as e:
-            print(f"Failed to post winner to dashboard: {e}")
+            print(f"Failed to update winning message in {game_channel.name}: {e}")
 
-        # Close all active submissions from before this winner was announced
+        # 2. Only post to dashboard/leaderboard channel IF it's a separate channel (prevents duplicates)
+        if channel and channel.id != game_channel.id:
+            embed = discord.Embed(
+                title=f"👑 {title} Weekly Winner!",
+                description=display_msg,
+                color=discord.Color.gold()
+            )
+            if image_url:
+                embed.set_image(url=image_url)
+            embed.set_footer(text=f"Total Votes: {vote_count:,}")
+
+            try:
+                await channel.send(embed=embed)
+            except Exception as e:
+                print(f"Failed to post winner to dashboard: {e}")
+
+        # 3. Close other active submissions in game_channel (skips the winning trophy!)
         try:
             import asyncio
-            async for old_msg in game_channel.history(limit=2000):
+            async for old_msg in game_channel.history(limit=500):
+                if old_msg.id == message_id:
+                    continue  # Keep the winning post as the Gold Trophy!
                 if old_msg.author == self.bot.user and old_msg.components:
                     old_embed = old_msg.embeds[0] if old_msg.embeds else None
                     if old_embed:
                         old_embed.color = discord.Color.dark_gray()
                         if old_embed.description and "🔒" not in old_embed.description:
-                            old_embed.description += "\n\n🔒 **Weekly Voting Closed!**"
+                            old_embed.description += "\n\n🔒 **Voting Closed**"
                     try:
                         await old_msg.edit(embed=old_embed, view=None)
-                        # Add a small delay to prevent hitting Discord's rate limit (429 Too Many Requests)
-                        await asyncio.sleep(1.5)
+                        await asyncio.sleep(1.0)
                     except Exception:
                         pass
         except discord.Forbidden:
